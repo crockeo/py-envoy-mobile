@@ -1,6 +1,6 @@
 # py-envoy-mobile
 
-Python platform implementation on top of envoy-mobile. To be used for ???
+Python bindings to envoy-mobile. To be used for ???
 
 ## License
 
