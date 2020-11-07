@@ -1,0 +1,3 @@
+[submodule "envoy-mobile"]
+	path = envoy-mobile
+	url = https://github.com/lyft/envoy-mobile
