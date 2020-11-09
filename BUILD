@@ -3,4 +3,7 @@ py_library(
     srcs = [
         "//py_envoy_mobile:__init__.py",
     ],
+    data = [
+        "//py_envoy_mobile/wrapper:envoy_mobile_wrapper.so",
+    ],
 )
