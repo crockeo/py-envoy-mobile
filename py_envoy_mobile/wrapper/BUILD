@@ -5,6 +5,9 @@ cc_binary(
     srcs = [
         "c_types_wrapper.cc",
     ],
+    deps = [
+        "@python//:python-lib",
+    ],
     # deps = [
     #     "@envoy_mobile//library/common:envoy_main_interface_lib"
     # ],

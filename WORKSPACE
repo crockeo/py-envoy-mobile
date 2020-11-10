@@ -43,3 +43,19 @@ envoy_mobile_dependencies()
 
 load("@envoy_mobile//bazel:envoy_mobile_toolchains.bzl", "envoy_mobile_toolchains")
 envoy_mobile_toolchains()
+
+# providing access to Python.h
+# TODO: make this cross-platform
+new_local_repository(
+    name = "python",
+    path = "/usr/local/opt/python3/Frameworks/Python.framework",
+    build_file_content = """
+cc_library(
+    name = "python-lib",
+    visibility = ["//visibility:public"],
+    srcs = [],
+    hdrs = glob(["Headers/**/*.h"]),
+    includes = ["Headers"],
+)
+"""
+)
