@@ -1,9 +1,11 @@
-py_library(
+py_binary(
     name = "py-envoy-mobile",
     srcs = [
         "//py_envoy_mobile:__init__.py",
     ],
+    main = "__init__.py",
     data = [
-        "//py_envoy_mobile/wrapper:envoy_mobile_wrapper.so",
+        "//py_envoy_mobile/wrapper:c_types_wrapper.so",
     ],
+    # imports = ['py_envoy_mobile/wrapper'],
 )

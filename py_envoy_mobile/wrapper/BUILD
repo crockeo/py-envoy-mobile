@@ -1,5 +1,5 @@
 cc_binary(
-    name = "envoy_mobile_wrapper.so",
+    name = "c_types_wrapper.so",
     visibility = ["//visibility:public"],
     linkshared = True,
     srcs = [
@@ -8,7 +8,4 @@ cc_binary(
     deps = [
         "@python//:python-lib",
     ],
-    # deps = [
-    #     "@envoy_mobile//library/common:envoy_main_interface_lib"
-    # ],
 )

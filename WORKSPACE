@@ -48,14 +48,14 @@ envoy_mobile_toolchains()
 # TODO: make this cross-platform
 new_local_repository(
     name = "python",
-    path = "/usr/local/opt/python3/Frameworks/Python.framework",
+    path = "/usr/local/Cellar/python@3.9/3.9.0_1/Frameworks/Python.framework/Versions/3.9",
     build_file_content = """
 cc_library(
     name = "python-lib",
     visibility = ["//visibility:public"],
-    srcs = [],
-    hdrs = glob(["Headers/**/*.h"]),
-    includes = ["Headers"],
+    srcs = ["lib/libpython3.9.dylib"],
+    hdrs = glob(["include/python3.9/**/*.h"]),
+    includes = ["include/python3.9"],
 )
 """
 )
