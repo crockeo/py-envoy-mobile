@@ -7,5 +7,6 @@ cc_binary(
     ],
     deps = [
         "@python//:python-lib",
+        "@envoy_mobile//library/common:envoy_main_interface_lib",
     ],
 )
