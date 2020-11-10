@@ -31,6 +31,14 @@ static struct PyModuleDef c_types_wrapper_module = {
   CTypesWrapperMethods,
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 PyObject *PyInit_c_types_wrapper(void) {
   return PyModule_Create(&c_types_wrapper_module);
 }
+
+#ifdef __cplusplus
+}
+#endif
