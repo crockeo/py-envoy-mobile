@@ -90,6 +90,70 @@ static int PyStreamObject_init(PyStreamObject *self, PyObject *args, PyObject *k
   return 0;
 }
 
+static PyObject *PyStreamObject_send_headers(PyStreamObject *self, PyObject *args, PyObject *kwargs) {
+  return (PyObject *)self;
+}
+
+static PyObject *PyStreamObject_send_data(PyStreamObject *self, PyObject *args, PyObject *kwargs) {
+  return (PyObject *)self;
+}
+
+static PyObject *PyStreamObject_send_metadata(PyStreamObject *self, PyObject *args, PyObject *kwargs) {
+  return (PyObject *)self;
+}
+
+static PyObject *PyStreamObject_send_trailers(PyStreamObject *self, PyObject *args, PyObject *kwargs) {
+  return (PyObject *)self;
+}
+
+static PyObject *PyStreamObject_reset(PyStreamObject *self, PyObject *args, PyObject *kwargs) {
+  return (PyObject *)self;
+}
+
+static PyObject *PyStreamObject_close(PyStreamObject *self, PyObject *args, PyObject *kwargs) {
+  return (PyObject *)self;
+}
+
+static PyMethodDef PyStreamObject_methods[] = {
+  {
+    "send_headers",
+    (PyCFunction)PyStreamObject_send_headers,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "send_data",
+    (PyCFunction)PyStreamObject_send_data,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "send_metadata",
+    (PyCFunction)PyStreamObject_send_metadata,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "send_trailers",
+    (PyCFunction)PyStreamObject_send_trailers,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "reset",
+    (PyCFunction)PyStreamObject_reset,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "close",
+    (PyCFunction)PyStreamObject_close,
+    METH_VARARGS,
+    nullptr,
+  },
+  {nullptr},
+};
+
 static PyTypeObject PyStreamType = {
   PyVarObject_HEAD_INIT(nullptr, 0)
 
@@ -100,6 +164,7 @@ static PyTypeObject PyStreamType = {
   .tp_flags = Py_TPFLAGS_DEFAULT,
   .tp_new = PyStreamObject_new,
   .tp_init = (initproc)PyStreamObject_init,
+  .tp_methods = PyStreamObject_methods,
 };
 
 
