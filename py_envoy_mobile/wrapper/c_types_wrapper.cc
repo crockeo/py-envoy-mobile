@@ -36,6 +36,7 @@ static void PyEngineObject_dealloc(PyEngineObject *self) {
   if (self->engine != 0) {
     terminate_engine(self->engine);
   }
+  Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 static PyTypeObject PyEngineType = {
@@ -49,6 +50,56 @@ static PyTypeObject PyEngineType = {
   .tp_new = PyEngineObject_new,
   .tp_init = (initproc)PyEngineObject_init,
   .tp_dealloc = (destructor)PyEngineObject_dealloc,
+};
+
+
+struct PyStreamObject {
+  PyObject_HEAD
+  envoy_stream_t stream;
+};
+
+static PyObject *PyStreamObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
+  PyStreamObject *self;
+  self = (PyStreamObject *)type->tp_alloc(type, 0);
+  if (self != nullptr) {
+    self->stream = 0;
+  }
+  return (PyObject *)self;
+}
+
+static int PyStreamObject_init(PyStreamObject *self, PyObject *args, PyObject *kwargs) {
+  static char *kwlist[] = {"engine", nullptr};
+  PyEngineObject *engine;
+
+  if (
+      !PyArg_ParseTupleAndKeywords(
+         args,
+         kwargs,
+         "O",
+         kwlist,
+         &engine
+      )
+  ) {
+    return -1;
+  }
+
+  self->stream = init_stream(engine->engine);
+  if (self->stream < 0) {
+    return -1;
+  }
+  return 0;
+}
+
+static PyTypeObject PyStreamType = {
+  PyVarObject_HEAD_INIT(nullptr, 0)
+
+  .tp_name = "c_types_wrapper.Stream",
+  .tp_doc = "envoy-mobile stream handle",
+  .tp_basicsize = sizeof(PyStreamObject),
+  .tp_itemsize = 0,
+  .tp_flags = Py_TPFLAGS_DEFAULT,
+  .tp_new = PyStreamObject_new,
+  .tp_init = (initproc)PyStreamObject_init,
 };
 
 
@@ -67,6 +118,8 @@ PyMODINIT_FUNC
 PyInit_c_types_wrapper(void) {
   if (PyType_Ready(&PyEngineType) < 0)
     return nullptr;
+  if (PyType_Ready(&PyStreamType) < 0)
+    return nullptr;
 
   auto mod = PyModule_Create(&c_types_wrapper_module);
   if (mod == nullptr)
@@ -75,6 +128,12 @@ PyInit_c_types_wrapper(void) {
   Py_INCREF(&PyEngineType);
   if (PyModule_AddObject(mod, "Engine", (PyObject *)&PyEngineType) < 0) {
     Py_DECREF(&PyEngineType);
+    Py_DECREF(&mod);
+    return nullptr;
+  }
+  Py_INCREF(&PyStreamType);
+  if (PyModule_AddObject(mod, "Stream", (PyObject *)&PyStreamType) < 0) {
+    Py_DECREF(&PyStreamType);
     Py_DECREF(&mod);
     return nullptr;
   }
