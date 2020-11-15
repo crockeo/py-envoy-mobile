@@ -6,6 +6,140 @@
 #include "library/common/main_interface.h"
 #include "library/common/types/c_types.h"
 
+// Missing pieces:
+//   - implementation for stream methods (outline below)
+//
+//   - envoy_header wrapper
+//   - envoy_headers wrapper
+//
+//   - envoy_data wrapper
+//
+//   - record_...
+//     - counter, gauge_set, gauge_add, gauge_sub
+//
+//   - register_platform_api
+//
+//   - run_engine
+//
+//   - envoy_engine_callbacks wrapper
+//
+//   - envoy_status_t wrapper
+
+// TODO: populate the set_...
+struct PyHttpCallbacksObject {
+  PyObject_HEAD
+  envoy_http_callbacks http_callbacks;
+};
+
+static PyObject *PyHttpCallbacksObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
+  PyHttpCallbacksObject *self;
+  self = (PyHttpCallbacksObject *)type->tp_alloc(type, 0);
+  if (self != nullptr) {
+    self->http_callbacks.on_headers = nullptr;
+    self->http_callbacks.on_data = nullptr;
+    self->http_callbacks.on_metadata = nullptr;
+    self->http_callbacks.on_trailers = nullptr;
+    self->http_callbacks.on_error = nullptr;
+    self->http_callbacks.on_complete = nullptr;
+    self->http_callbacks.on_cancel = nullptr;
+  }
+  return (PyObject *)self;
+}
+
+static PyObject *PyHttpCallbacksObject_set_on_headers(PyHttpCallbacksObject *self, PyObject *args) {
+  Py_INCREF(self);
+  return (PyObject *)self;
+}
+
+static PyObject *PyHttpCallbacksObject_set_on_data(PyHttpCallbacksObject *self, PyObject *args) {
+  Py_INCREF(self);
+  return (PyObject *)self;
+}
+
+static PyObject *PyHttpCallbacksObject_set_on_metadata(PyHttpCallbacksObject *self, PyObject *args) {
+  Py_INCREF(self);
+  return (PyObject *)self;
+}
+
+static PyObject *PyHttpCallbacksObject_set_on_trailers(PyHttpCallbacksObject *self, PyObject *args) {
+  Py_INCREF(self);
+  return (PyObject *)self;
+}
+
+static PyObject *PyHttpCallbacksObject_set_on_error(PyHttpCallbacksObject *self, PyObject *args) {
+  Py_INCREF(self);
+  return (PyObject *)self;
+}
+
+static PyObject *PyHttpCallbacksObject_set_on_complete(PyHttpCallbacksObject *self, PyObject *args) {
+  Py_INCREF(self);
+  return (PyObject *)self;
+}
+
+static PyObject *PyHttpCallbacksObject_set_on_cancel(PyHttpCallbacksObject *self, PyObject *args) {
+  Py_INCREF(self);
+  return (PyObject *)self;
+}
+
+static PyMethodDef PyHttpCallbacksObject_methods[] = {
+  {
+    "set_on_headers",
+    (PyCFunction)PyHttpCallbacksObject_set_on_headers,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "set_on_data",
+    (PyCFunction)PyHttpCallbacksObject_set_on_data,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "set_on_metadata",
+    (PyCFunction)PyHttpCallbacksObject_set_on_metadata,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "set_on_trailers",
+    (PyCFunction)PyHttpCallbacksObject_set_on_trailers,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "set_on_error",
+    (PyCFunction)PyHttpCallbacksObject_set_on_error,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "set_on_complete",
+    (PyCFunction)PyHttpCallbacksObject_set_on_complete,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "set_on_cancel",
+    (PyCFunction)PyHttpCallbacksObject_set_on_cancel,
+    METH_VARARGS,
+    nullptr,
+  },
+  {nullptr},
+};
+
+static PyTypeObject PyHttpCallbacksType = {
+  PyVarObject_HEAD_INIT(nullptr, 0)
+
+  .tp_name = "c_types_wrapper.HttpCallbacks",
+  .tp_doc = "",
+  .tp_basicsize = sizeof(PyHttpCallbacksObject),
+  .tp_itemsize = 0,
+  .tp_flags = Py_TPFLAGS_DEFAULT,
+  .tp_new = PyHttpCallbacksObject_new,
+  .tp_methods = PyHttpCallbacksObject_methods,
+};
+
+
 // PyEngineObject wraps envoy-mobile's envoy_engine_t type into a Python class that creates an
 // engine when it is initialized.
 struct PyEngineObject {
@@ -45,6 +179,7 @@ static PyMethodDef PyEngineObject_methods[] = {
     METH_NOARGS,
     nullptr,
   },
+  {nullptr},
 };
 
 static PyTypeObject PyEngineType = {
@@ -191,6 +326,8 @@ extern "C" {
 
 PyMODINIT_FUNC
 PyInit_c_types_wrapper(void) {
+  if (PyType_Ready(&PyHttpCallbacksType) < 0)
+    return nullptr;
   if (PyType_Ready(&PyEngineType) < 0)
     return nullptr;
   if (PyType_Ready(&PyStreamType) < 0)
@@ -199,6 +336,13 @@ PyInit_c_types_wrapper(void) {
   auto mod = PyModule_Create(&c_types_wrapper_module);
   if (mod == nullptr)
     return nullptr;
+
+  Py_INCREF(&PyHttpCallbacksType);
+  if (PyModule_AddObject(mod, "HttpCallbacks", (PyObject *)&PyHttpCallbacksType) < 0) {
+    Py_DECREF(&PyHttpCallbacksType);
+    Py_DECREF(&mod);
+    return nullptr;
+  }
 
   Py_INCREF(&PyEngineType);
   if (PyModule_AddObject(mod, "Engine", (PyObject *)&PyEngineType) < 0) {
