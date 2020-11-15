@@ -19,12 +19,12 @@ http_callbacks = (
 headers = (
     c_types_wrapper.Headers()
     .set_header(
-        "Content-Type",
-        "application/json",
+        c_types_wrapper.Data("Content-Type"),
+        c_types_wrapper.Data("application/json"),
     )
     .set_header(
-        "Accept",
-        "application/json",
+        c_types_wrapper.Data("Accept"),
+        c_types_wrapper.Data("application/json"),
     )
 )
 
