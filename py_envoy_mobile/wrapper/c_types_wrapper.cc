@@ -2,6 +2,8 @@
 #include "Python.h"
 
 #include <iostream>
+#include <utility>
+#include <vector>
 
 #include "library/common/main_interface.h"
 #include "library/common/types/c_types.h"
@@ -24,6 +26,53 @@
 //   - envoy_engine_callbacks wrapper
 //
 //   - envoy_status_t wrapper
+
+
+// TODO: populate headers defn
+struct PyHeadersObject {
+  PyObject_HEAD
+  envoy_headers headers;
+};
+
+static PyObject *PyHeadersObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
+  PyHeadersObject *self;
+  self = (PyHeadersObject *)type->tp_alloc(type, 0);
+  if (self != nullptr) {
+    self->headers.length = 0;
+    self->headers.headers = nullptr;
+  }
+  return (PyObject *)self;
+}
+
+static PyObject *PyHeadersObject_set_header(PyHeadersObject *self, PyObject *args) {
+  // TODO: actually set the header
+
+  Py_INCREF(self);
+  return (PyObject *)self;
+}
+
+static PyMethodDef PyHeadersObject_methods[] = {
+  {
+    "set_header",
+    (PyCFunction)PyHeadersObject_set_header,
+    METH_VARARGS,
+    nullptr,
+  },
+  {nullptr},
+};
+
+static PyTypeObject PyHeadersType = {
+  PyVarObject_HEAD_INIT(nullptr, 0)
+
+  .tp_name = "c_types_wrapper.Headers",
+  .tp_doc = "",
+  .tp_basicsize = sizeof(PyHeadersObject),
+  .tp_itemsize = 0,
+  .tp_flags = Py_TPFLAGS_DEFAULT,
+  .tp_new = PyHeadersObject_new,
+  .tp_methods = PyHeadersObject_methods,
+};
+
 
 // TODO: populate the set_...
 struct PyHttpCallbacksObject {
@@ -326,35 +375,45 @@ extern "C" {
 
 PyMODINIT_FUNC
 PyInit_c_types_wrapper(void) {
-  if (PyType_Ready(&PyHttpCallbacksType) < 0)
-    return nullptr;
-  if (PyType_Ready(&PyEngineType) < 0)
-    return nullptr;
-  if (PyType_Ready(&PyStreamType) < 0)
-    return nullptr;
+  std::vector<std::pair<PyTypeObject *, const char *>> types = {
+    {
+      &PyHeadersType,
+      "Headers",
+    },
+    {
+      &PyHttpCallbacksType,
+      "HttpCallbacks",
+    },
+    {
+      &PyEngineType,
+      "Engine",
+    },
+    {
+      &PyStreamType,
+      "Stream",
+    },
+  };
+
+  for (auto pair : types) {
+    if (PyType_Ready(pair.first) < 0) {
+      return nullptr;
+    }
+  }
 
   auto mod = PyModule_Create(&c_types_wrapper_module);
   if (mod == nullptr)
     return nullptr;
 
-  Py_INCREF(&PyHttpCallbacksType);
-  if (PyModule_AddObject(mod, "HttpCallbacks", (PyObject *)&PyHttpCallbacksType) < 0) {
-    Py_DECREF(&PyHttpCallbacksType);
-    Py_DECREF(&mod);
-    return nullptr;
-  }
+  for (auto pair : types) {
+    auto type = pair.first;
+    auto name = pair.second;
 
-  Py_INCREF(&PyEngineType);
-  if (PyModule_AddObject(mod, "Engine", (PyObject *)&PyEngineType) < 0) {
-    Py_DECREF(&PyEngineType);
-    Py_DECREF(&mod);
-    return nullptr;
-  }
-  Py_INCREF(&PyStreamType);
-  if (PyModule_AddObject(mod, "Stream", (PyObject *)&PyStreamType) < 0) {
-    Py_DECREF(&PyStreamType);
-    Py_DECREF(&mod);
-    return nullptr;
+    Py_INCREF(type);
+    if (PyModule_AddObject(mod, name, (PyObject *)type) < 0) {
+      Py_DECREF(type);
+      Py_DECREF(&mod);
+      return nullptr;
+    }
   }
 
   return mod;

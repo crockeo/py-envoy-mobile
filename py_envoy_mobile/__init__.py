@@ -16,5 +16,17 @@ http_callbacks = (
     .set_on_cancel()
 )
 
+headers = (
+    c_types_wrapper.Headers()
+    .set_header(
+        "Content-Type",
+        "application/json",
+    )
+    .set_header(
+        "Accept",
+        "application/json",
+    )
+)
+
 stream.close()
 engine.terminate()
