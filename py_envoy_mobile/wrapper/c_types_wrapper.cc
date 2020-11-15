@@ -6,8 +6,8 @@
 #include "library/common/main_interface.h"
 #include "library/common/types/c_types.h"
 
-// PyEngineObject wraps envoy-mobile's envoy_engine_t type into a Python class that creates an engine when it is
-// initialized.
+// PyEngineObject wraps envoy-mobile's envoy_engine_t type into a Python class that creates an
+// engine when it is initialized.
 struct PyEngineObject {
   PyObject_HEAD
   envoy_engine_t engine;
@@ -32,12 +32,20 @@ static int PyEngineObject_init(PyEngineObject *self, PyObject *args, PyObject *k
   return 0;
 }
 
-static void PyEngineObject_dealloc(PyEngineObject *self) {
-  if (self->engine != 0) {
-    terminate_engine(self->engine);
-  }
-  Py_TYPE(self)->tp_free((PyObject *)self);
+PyObject *PyEngineObject_terminate(PyEngineObject *self) {
+  terminate_engine(self->engine);
+  Py_INCREF(Py_None);
+  return Py_None;
 }
+
+static PyMethodDef PyEngineObject_methods[] = {
+  {
+    "terminate",
+    (PyCFunction)PyEngineObject_terminate,
+    METH_NOARGS,
+    nullptr,
+  },
+};
 
 static PyTypeObject PyEngineType = {
   PyVarObject_HEAD_INIT(nullptr, 0)
@@ -49,10 +57,12 @@ static PyTypeObject PyEngineType = {
   .tp_flags = Py_TPFLAGS_DEFAULT,
   .tp_new = PyEngineObject_new,
   .tp_init = (initproc)PyEngineObject_init,
-  .tp_dealloc = (destructor)PyEngineObject_dealloc,
+  .tp_methods = PyEngineObject_methods,
 };
 
 
+// PyStreamObject wraps envoy-mobile's envoy_stream_t type into a Python class. Initializing the
+// PyStreamObject (with a PyEngineObject as a param) initializes a new stream.
 struct PyStreamObject {
   PyObject_HEAD
   envoy_stream_t stream;
