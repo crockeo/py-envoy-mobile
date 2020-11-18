@@ -8,6 +8,8 @@
 #include "library/common/main_interface.h"
 #include "library/common/types/c_types.h"
 
+#include "py_envoy_data.h"
+
 // Missing pieces:
 //   - implementation for stream methods (outline below)
 //
@@ -21,71 +23,6 @@
 //   - envoy_engine_callbacks wrapper
 //
 //   - envoy_status_t wrapper
-
-struct PyEnvoyDataObject {
-  PyObject_HEAD
-  envoy_data data;
-};
-
-static PyObject *PyEnvoyData_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
-static PyObject *PyEnvoyData_init(PyEnvoyDataObject *self, PyObject *args, PyObject *kwargs);
-static void PyEnvoyData_dealloc(PyEnvoyDataObject *self);
-
-static PyTypeObject PyEnvoyDataType = {
-  PyVarObject_HEAD_INIT(nullptr, 0)
-
-  .tp_name = "c_types_wrapper.Data",
-  .tp_doc = "",
-  .tp_basicsize = sizeof(PyEnvoyDataObject),
-  .tp_itemsize = 0,
-  .tp_flags = Py_TPFLAGS_DEFAULT,
-  .tp_new = PyEnvoyData_new,
-  .tp_init = (initproc)PyEnvoyData_init,
-  .tp_dealloc = (destructor)PyEnvoyData_dealloc,
-};
-
-static PyObject *PyEnvoyData_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
-  PyEnvoyDataObject *self;
-  self = (PyEnvoyDataObject *)type->tp_alloc(type, 0);
-  if (self != nullptr) {
-    self->data.length = 0;
-    self->data.bytes = nullptr;
-    self->data.release = nullptr;
-    self->data.context = nullptr;
-  }
-  return (PyObject *)self;
-}
-
-static PyObject *PyEnvoyData_init(PyEnvoyDataObject *self, PyObject *args, PyObject *kwargs) {
-  Py_buffer buffer;
-  if (!PyArg_ParseTuple(args, "s*", &buffer)) {
-    Py_INCREF(Py_None);
-    return Py_None;
-  }
-
-  // we copy the data contained inside the buffer so we can tie the lifecycle of the envoy_data
-  // contents to the lifecycle of the PyEnvoyDataObject.
-  void *bufCpy = (unsigned char *)safe_malloc(buffer.len);
-  memcpy(bufCpy, buffer.buf, buffer.len);
-
-  self->data.length = buffer.len;
-  self->data.bytes = (unsigned char *)bufCpy;
-  self->data.release = envoy_noop_release;
-  self->data.context = nullptr;
-
-  Py_INCREF(self);
-  return (PyObject *)self;
-}
-
-static void PyEnvoyData_dealloc(PyEnvoyDataObject *self) {
-  if (self->data.bytes != nullptr) {
-    // We assume that, if the bytes are populated, then the rest of the envoy_data object is
-    // well-formed.
-    delete self->data.bytes;
-    self->data.release(self->data.context);
-  }
-  Py_TYPE(self)->tp_free((PyObject *)self);
-}
 
 struct PyHeadersObject {
   PyObject_HEAD
