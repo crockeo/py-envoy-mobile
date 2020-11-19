@@ -9,7 +9,6 @@ class EnvoyConfig:
 
         self.parameters = {
             "virtual_clusters": "[]",
-            "platform_filter_chain": "",
             "dns_refresh_rate_seconds": 3,
             "dns_failure_refresh_rate_seconds_base": 2,
             "dns_failure_refresh_rate_seconds_max": 10,
@@ -29,7 +28,13 @@ class EnvoyConfig:
 
     def build(self):
         template = self.template
-        for key, value in self.parameters.items():
+        parameters = {
+            **self.parameters,
+            "platform_filter_chain": c_types_wrapper.platform_filter_template().replace(
+                "{{ platform_filter_name }}", "python"
+            ),
+        }
+        for key, value in parameters.items():
             key = "{{ key }}".replace("key", key)
             template = template.replace(key, str(value))
         return template
@@ -37,6 +42,8 @@ class EnvoyConfig:
 
 def on_engine_running():
     # TODO: figure out why this isn't being called, but on_exit is 🤔
+    with open("~/log.txt", "w") as f:
+        f.write("does this get run and just not piped to stdout?")
     print("on_engine_running")
 
 
@@ -57,5 +64,5 @@ def main(config: str, debug_level: str):
 if __name__ == "__main__":
     main(
         EnvoyConfig().build(),
-        "debug",
+        "info",
     )

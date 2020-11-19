@@ -36,10 +36,28 @@ static PyObject *c_types_wrapper_config_template() {
   return py_string_config_template;
 }
 
+static PyObject *c_types_wrapper_platform_filter_template() {
+  PyObject *py_string_platform_filter_template;
+  py_string_platform_filter_template = Py_BuildValue("s", platform_filter_template);
+  if (py_string_platform_filter_template == nullptr) {
+    PyErr_SetString(PyExc_RuntimeError, "failed to build platform filter template");
+    return nullptr;
+  }
+
+  Py_INCREF(py_string_platform_filter_template);
+  return py_string_platform_filter_template;
+}
+
 static PyMethodDef c_types_wrapper_methods[] = {
   {
     "config_template",
     (PyCFunction)c_types_wrapper_config_template,
+    METH_NOARGS,
+    nullptr,
+  },
+  {
+    "platform_filter_template",
+    (PyCFunction)c_types_wrapper_platform_filter_template,
     METH_NOARGS,
     nullptr,
   },
