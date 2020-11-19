@@ -20,21 +20,14 @@ struct PyHttpCallbacksObject {
 };
 
 PyObject *PyHttpCallbacksObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
-
-PyObject *PyHttpCallbacksObject_init(PyHttpCallbacksObject *self, PyObject *args, PyObject *kwargs);
+int PyHttpCallbacksObject_init(PyHttpCallbacksObject *self, PyObject *args, PyObject *kwargs);
 
 PyObject *PyHttpCallbacksObject_set_on_headers(PyHttpCallbacksObject *self, PyObject *args);
-
 PyObject *PyHttpCallbacksObject_set_on_data(PyHttpCallbacksObject *self, PyObject *args);
-
 PyObject *PyHttpCallbacksObject_set_on_metadata(PyHttpCallbacksObject *self, PyObject *args);
-
 PyObject *PyHttpCallbacksObject_set_on_trailers(PyHttpCallbacksObject *self, PyObject *args);
-
 PyObject *PyHttpCallbacksObject_set_on_error(PyHttpCallbacksObject *self, PyObject *args);
-
 PyObject *PyHttpCallbacksObject_set_on_complete(PyHttpCallbacksObject *self, PyObject *args);
-
 PyObject *PyHttpCallbacksObject_set_on_cancel(PyHttpCallbacksObject *self, PyObject *args);
 
 static PyMethodDef PyHttpCallbacksObject_methods[] = {

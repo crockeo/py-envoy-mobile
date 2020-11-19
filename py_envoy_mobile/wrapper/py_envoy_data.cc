@@ -12,11 +12,10 @@ PyObject *PyEnvoyData_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) 
   return (PyObject *)self;
 }
 
-PyObject *PyEnvoyData_init(PyEnvoyDataObject *self, PyObject *args, PyObject *kwargs) {
+int PyEnvoyData_init(PyEnvoyDataObject *self, PyObject *args, PyObject *kwargs) {
   Py_buffer buffer;
   if (!PyArg_ParseTuple(args, "s*", &buffer)) {
-    Py_INCREF(Py_None);
-    return Py_None;
+    return -1;
   }
 
   // we copy the data contained inside the buffer so we can tie the lifecycle of the envoy_data
@@ -29,8 +28,7 @@ PyObject *PyEnvoyData_init(PyEnvoyDataObject *self, PyObject *args, PyObject *kw
   self->data.release = envoy_noop_release;
   self->data.context = nullptr;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+  return 0;
 }
 
 void PyEnvoyData_dealloc(PyEnvoyDataObject *self) {

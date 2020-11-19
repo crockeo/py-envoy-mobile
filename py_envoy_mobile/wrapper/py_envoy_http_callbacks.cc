@@ -84,7 +84,7 @@ PyObject *PyHttpCallbacksObject_new(PyTypeObject *type, PyObject *args, PyObject
   return (PyObject *)self;
 }
 
-PyObject *PyHttpCallbacksObject_init(PyHttpCallbacksObject *self, PyObject *args, PyObject *kwargs) {
+int PyHttpCallbacksObject_init(PyHttpCallbacksObject *self, PyObject *args, PyObject *kwargs) {
   for (int i = 0; i < 8; i++) {
     Py_INCREF(Py_None);
   }
@@ -97,8 +97,7 @@ PyObject *PyHttpCallbacksObject_init(PyHttpCallbacksObject *self, PyObject *args
   self->on_complete = Py_None;
   self->on_cancel = Py_None;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+  return 0;
 }
 
 PyObject *PyHttpCallbacksObject_set_on_headers(PyHttpCallbacksObject *self, PyObject *args) {

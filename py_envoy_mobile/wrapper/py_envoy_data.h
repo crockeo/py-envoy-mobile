@@ -10,7 +10,7 @@ struct PyEnvoyDataObject {
 };
 
 PyObject *PyEnvoyData_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
-PyObject *PyEnvoyData_init(PyEnvoyDataObject *self, PyObject *args, PyObject *kwargs);
+int PyEnvoyData_init(PyEnvoyDataObject *self, PyObject *args, PyObject *kwargs);
 void PyEnvoyData_dealloc(PyEnvoyDataObject *self);
 
 static PyTypeObject PyEnvoyDataType = {
