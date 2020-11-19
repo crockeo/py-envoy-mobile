@@ -1,6 +1,6 @@
 #include "py_envoy_engine_callbacks.h"
 
-#include <exception>
+#include <stdexcept>
 
 
 void dispatchOnEngineRunning(void *context) {
