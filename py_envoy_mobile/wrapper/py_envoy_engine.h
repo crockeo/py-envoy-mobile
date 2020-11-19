@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Python.h"
 #include "library/common/types/c_types.h"
+#include "Python.h"
 
 
 struct PyEngineObject {
@@ -12,9 +12,16 @@ struct PyEngineObject {
 PyObject *PyEngineObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
 int PyEngineObject_init(PyEngineObject *self, PyObject *args, PyObject *kwargs);
 
+PyObject *PyEngineObject_run(PyEngineObject *self, PyObject *args);
 PyObject *PyEngineObject_terminate(PyEngineObject *self);
 
 static PyMethodDef PyEngineObject_methods[] = {
+  {
+    "run",
+    (PyCFunction)PyEngineObject_run,
+    METH_VARARGS,
+    nullptr,
+  },
   {
     "terminate",
     (PyCFunction)PyEngineObject_terminate,

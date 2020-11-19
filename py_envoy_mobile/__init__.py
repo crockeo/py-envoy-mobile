@@ -1,32 +1,39 @@
 from py_envoy_mobile.wrapper import c_types_wrapper
 
-# build a envoy mobile engine
-engine = c_types_wrapper.Engine()
-stream = c_types_wrapper.Stream(engine)
+
+def on_engine_running():
+    print("on_engine_running")
 
 
-def handle_callback(headers: c_types_wrapper.Headers, closed: bool):
-    print("hello world")
+def on_exit():
+    print("on_exit")
 
 
-# NOTE: none of these do anything yet
-http_callbacks = c_types_wrapper.HttpCallbacks().set_on_headers(handle_callback)
+def main(config: str, debug_level: str):
+    engine = c_types_wrapper.Engine()
 
-stream.start(http_callbacks)
+    engine_callbacks = c_types_wrapper.EngineCallbacks().set_on_engine_running(on_engine_running).set_on_exit(on_exit)
 
-headers = (
-    c_types_wrapper.Headers()
-    .set_header(
-        c_types_wrapper.Data("Content-Type"),
-        c_types_wrapper.Data("application/json"),
-    )
-    .set_header(
-        c_types_wrapper.Data("Accept"),
-        c_types_wrapper.Data("application/json"),
-    )
-)
+    # TODO: figure out why this causes an exception from envoy not being able to lock a mutex
+    engine.run(engine_callbacks, config, debug_level)
+    # TODO: figure out why this halts the program...and stops the exception
+    # engine.terminate()
 
-stream.send_headers(headers, False)
 
-stream.close()
-engine.terminate()
+if __name__ == "__main__":
+    # TODO: instead of passing in a malformed template use config_template in the main_interface.h
+    # params:
+    #   - virtual_clusters
+    #   - platform_filter_chain
+    #   - dns_refresh_rate_seconds
+    #   - dns_failure_refresh_rate_seconds_base
+    #   - dns_failure_refresh_rate_seconds_max
+    #   - connect_timeout_seconds
+    #   - stats_domain
+    #   - stats_flush_interval_seconds
+    #   - app_id
+    #   - app_version
+    #   - device_os
+    with open("py_envoy_mobile/envoy_config.yaml", "r") as f:
+        config = f.read()
+    main(config, "debug")

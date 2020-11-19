@@ -10,6 +10,7 @@
 
 #include "py_envoy_data.h"
 #include "py_envoy_engine.h"
+#include "py_envoy_engine_callbacks.h"
 #include "py_envoy_headers.h"
 #include "py_envoy_http_callbacks.h"
 #include "py_envoy_stream.h"
@@ -64,6 +65,10 @@ PyInit_c_types_wrapper(void) {
     {
       &PyStreamType,
       "Stream",
+    },
+    {
+      &PyEngineCallbacksType,
+      "EngineCallbacks",
     },
   };
 
