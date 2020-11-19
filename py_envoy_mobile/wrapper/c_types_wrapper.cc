@@ -22,14 +22,29 @@
 //     - counter, gauge_set, gauge_add, gauge_sub
 //
 //   - register_platform_api
-//
-//   - run_engine
-//
-//   - envoy_engine_callbacks wrapper
-//
-//   - envoy_status_t wrapper
 
 
+static PyObject *c_types_wrapper_config_template() {
+  PyObject *py_string_config_template;
+  py_string_config_template = Py_BuildValue("s", config_template);
+  if (py_string_config_template == nullptr) {
+    PyErr_SetString(PyExc_RuntimeError, "failed to build config template");
+    return nullptr;
+  }
+
+  Py_INCREF(py_string_config_template);
+  return py_string_config_template;
+}
+
+static PyMethodDef c_types_wrapper_methods[] = {
+  {
+    "config_template",
+    (PyCFunction)c_types_wrapper_config_template,
+    METH_NOARGS,
+    nullptr,
+  },
+  {nullptr},
+};
 
 
 static struct PyModuleDef c_types_wrapper_module = {
@@ -37,6 +52,7 @@ static struct PyModuleDef c_types_wrapper_module = {
   "c_types_wrapper",
   nullptr,
   -1,
+  c_types_wrapper_methods,
 };
 
 #ifdef __cplusplus

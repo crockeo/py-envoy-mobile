@@ -1,7 +1,42 @@
+from typing import Any
+
 from py_envoy_mobile.wrapper import c_types_wrapper
 
 
+class EnvoyConfig:
+    def __init__(self):
+        self.template = c_types_wrapper.config_template()
+
+        self.parameters = {
+            "virtual_clusters": "[]",
+            "platform_filter_chain": "",
+            "dns_refresh_rate_seconds": 3,
+            "dns_failure_refresh_rate_seconds_base": 2,
+            "dns_failure_refresh_rate_seconds_max": 10,
+            "connect_timeout_seconds": 30,
+            "stats_domain": "0.0.0.0",
+            "stats_flush_interval_seconds": 60,
+            "app_id": "unspecified",
+            "app_version": "unspecified",
+            "device_os": "computer",  # TODO: actually get OS info?
+        }
+
+    def set(self, param: str, value: Any) -> "EnvoyConfig":
+        if param not in self.parameters:
+            raise KeyError(f"{param} not in param list")
+        self.parameters[param] = value
+        return self
+
+    def build(self):
+        template = self.template
+        for key, value in self.parameters.items():
+            key = "{{ key }}".replace("key", key)
+            template = template.replace(key, str(value))
+        return template
+
+
 def on_engine_running():
+    # TODO: figure out why this isn't being called, but on_exit is 🤔
     print("on_engine_running")
 
 
@@ -14,26 +49,13 @@ def main(config: str, debug_level: str):
 
     engine_callbacks = c_types_wrapper.EngineCallbacks().set_on_engine_running(on_engine_running).set_on_exit(on_exit)
 
-    # TODO: figure out why this causes an exception from envoy not being able to lock a mutex
+    # TODO: figure out why this causes an exception from envoy not being able to lock a mutex when we don't terminate
     engine.run(engine_callbacks, config, debug_level)
-    # TODO: figure out why this halts the program...and stops the exception
-    # engine.terminate()
+    engine.terminate()
 
 
 if __name__ == "__main__":
-    # TODO: instead of passing in a malformed template use config_template in the main_interface.h
-    # params:
-    #   - virtual_clusters
-    #   - platform_filter_chain
-    #   - dns_refresh_rate_seconds
-    #   - dns_failure_refresh_rate_seconds_base
-    #   - dns_failure_refresh_rate_seconds_max
-    #   - connect_timeout_seconds
-    #   - stats_domain
-    #   - stats_flush_interval_seconds
-    #   - app_id
-    #   - app_version
-    #   - device_os
-    with open("py_envoy_mobile/envoy_config.yaml", "r") as f:
-        config = f.read()
-    main(config, "debug")
+    main(
+        EnvoyConfig().build(),
+        "debug",
+    )
