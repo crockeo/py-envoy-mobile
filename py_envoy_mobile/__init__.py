@@ -4,17 +4,15 @@ from py_envoy_mobile.wrapper import c_types_wrapper
 engine = c_types_wrapper.Engine()
 stream = c_types_wrapper.Stream(engine)
 
+
+def handle_callback(headers: c_types_wrapper.Headers, closed: bool):
+    print("hello world")
+
+
 # NOTE: none of these do anything yet
-http_callbacks = (
-    c_types_wrapper.HttpCallbacks()
-    .set_on_headers()
-    .set_on_data()
-    .set_on_metadata()
-    .set_on_trailers()
-    .set_on_error()
-    .set_on_complete()
-    .set_on_cancel()
-)
+http_callbacks = c_types_wrapper.HttpCallbacks().set_on_headers(handle_callback)
+
+stream.start(http_callbacks)
 
 headers = (
     c_types_wrapper.Headers()
@@ -27,6 +25,8 @@ headers = (
         c_types_wrapper.Data("application/json"),
     )
 )
+
+stream.send_headers(headers, False)
 
 stream.close()
 engine.terminate()

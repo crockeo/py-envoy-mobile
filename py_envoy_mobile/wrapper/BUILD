@@ -1,16 +1,21 @@
 cc_library(
-    name = "py_envoy_data",
+    name = "wrapper",
     srcs = [
         "py_envoy_data.cc",
+        "py_envoy_headers.cc",
+        "py_envoy_http_callbacks.cc",
     ],
     hdrs = [
         "py_envoy_data.h",
+        "py_envoy_headers.h",
+        "py_envoy_http_callbacks.h",
     ],
     deps = [
         "@python//:python-lib",
         "@envoy_mobile//library/common:envoy_main_interface_lib",
     ],
 )
+
 
 cc_binary(
     name = "c_types_wrapper.so",
@@ -20,8 +25,7 @@ cc_binary(
         "c_types_wrapper.cc",
     ],
     deps = [
-        ":py_envoy_data",
-
+        ":wrapper",
         "@python//:python-lib",
         "@envoy_mobile//library/common:envoy_main_interface_lib",
     ],

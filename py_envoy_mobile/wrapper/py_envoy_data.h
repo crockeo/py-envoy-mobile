@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Python.h"
-
 #include "library/common/types/c_types.h"
 
 

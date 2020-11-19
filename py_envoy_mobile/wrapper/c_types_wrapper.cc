@@ -9,6 +9,8 @@
 #include "library/common/types/c_types.h"
 
 #include "py_envoy_data.h"
+#include "py_envoy_headers.h"
+#include "py_envoy_http_callbacks.h"
 
 // Missing pieces:
 //   - implementation for stream methods (outline below)
@@ -23,196 +25,6 @@
 //   - envoy_engine_callbacks wrapper
 //
 //   - envoy_status_t wrapper
-
-struct PyHeadersObject {
-  PyObject_HEAD
-  envoy_headers headers;
-  size_t capacity;
-};
-
-static PyObject *PyHeadersObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
-  PyHeadersObject *self;
-  self = (PyHeadersObject *)type->tp_alloc(type, 0);
-  if (self != nullptr) {
-    self->headers.length = 0;
-    self->headers.headers = (envoy_header *)safe_malloc(sizeof(envoy_header));
-    self->capacity = 1;
-  }
-  return (PyObject *)self;
-}
-
-static void PyHeadersObject_dealloc(PyHeadersObject *self) {
-  release_envoy_headers(self->headers);
-  Py_TYPE(self)->tp_free((PyObject *)self);
-}
-
-static PyObject *PyHeadersObject_set_header(PyHeadersObject *self, PyObject *args) {
-  PyEnvoyDataObject *name;
-  PyEnvoyDataObject *value;
-
-  if (PyArg_ParseTuple(args, "OO", &name, &value) < 0) {
-    Py_INCREF(self);
-    return (PyObject *)self;
-  }
-
-  envoy_header header = {
-    copy_envoy_data(name->data.length, name->data.bytes),
-    copy_envoy_data(name->data.length, name->data.bytes),
-  };
-
-  // NOTE: currently we assume that a header with the same value is never set twice. i.e. we just
-  // append the envoy_header to the list, rather than trying to replace its existing value.
-  if (self->headers.length >= self->capacity) {
-    envoy_header *newHeaders = (envoy_header *)safe_malloc(sizeof(envoy_header) * 2 * self->capacity);
-    memcpy(newHeaders, self->headers.headers, sizeof(envoy_header) * self->headers.length);
-    free(self->headers.headers);
-    self->headers.headers = newHeaders;
-  }
-
-  self->headers.headers[self->headers.length] = header;
-  self->headers.length++;
-
-  Py_INCREF(self);
-  return (PyObject *)self;
-}
-
-static PyMethodDef PyHeadersObject_methods[] = {
-  {
-    "set_header",
-    (PyCFunction)PyHeadersObject_set_header,
-    METH_VARARGS,
-    nullptr,
-  },
-  {nullptr},
-};
-
-static PyTypeObject PyHeadersType = {
-  PyVarObject_HEAD_INIT(nullptr, 0)
-
-  .tp_name = "c_types_wrapper.Headers",
-  .tp_doc = "",
-  .tp_basicsize = sizeof(PyHeadersObject),
-  .tp_itemsize = 0,
-  .tp_flags = Py_TPFLAGS_DEFAULT,
-  .tp_new = PyHeadersObject_new,
-  .tp_dealloc = (destructor)PyHeadersObject_dealloc,
-  .tp_methods = PyHeadersObject_methods,
-};
-
-
-// TODO: populate the set_...
-struct PyHttpCallbacksObject {
-  PyObject_HEAD
-  envoy_http_callbacks http_callbacks;
-};
-
-static PyObject *PyHttpCallbacksObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
-  PyHttpCallbacksObject *self;
-  self = (PyHttpCallbacksObject *)type->tp_alloc(type, 0);
-  if (self != nullptr) {
-    self->http_callbacks.on_headers = nullptr;
-    self->http_callbacks.on_data = nullptr;
-    self->http_callbacks.on_metadata = nullptr;
-    self->http_callbacks.on_trailers = nullptr;
-    self->http_callbacks.on_error = nullptr;
-    self->http_callbacks.on_complete = nullptr;
-    self->http_callbacks.on_cancel = nullptr;
-  }
-  return (PyObject *)self;
-}
-
-static PyObject *PyHttpCallbacksObject_set_on_headers(PyHttpCallbacksObject *self, PyObject *args) {
-  Py_INCREF(self);
-  return (PyObject *)self;
-}
-
-static PyObject *PyHttpCallbacksObject_set_on_data(PyHttpCallbacksObject *self, PyObject *args) {
-  Py_INCREF(self);
-  return (PyObject *)self;
-}
-
-static PyObject *PyHttpCallbacksObject_set_on_metadata(PyHttpCallbacksObject *self, PyObject *args) {
-  Py_INCREF(self);
-  return (PyObject *)self;
-}
-
-static PyObject *PyHttpCallbacksObject_set_on_trailers(PyHttpCallbacksObject *self, PyObject *args) {
-  Py_INCREF(self);
-  return (PyObject *)self;
-}
-
-static PyObject *PyHttpCallbacksObject_set_on_error(PyHttpCallbacksObject *self, PyObject *args) {
-  Py_INCREF(self);
-  return (PyObject *)self;
-}
-
-static PyObject *PyHttpCallbacksObject_set_on_complete(PyHttpCallbacksObject *self, PyObject *args) {
-  Py_INCREF(self);
-  return (PyObject *)self;
-}
-
-static PyObject *PyHttpCallbacksObject_set_on_cancel(PyHttpCallbacksObject *self, PyObject *args) {
-  Py_INCREF(self);
-  return (PyObject *)self;
-}
-
-static PyMethodDef PyHttpCallbacksObject_methods[] = {
-  {
-    "set_on_headers",
-    (PyCFunction)PyHttpCallbacksObject_set_on_headers,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "set_on_data",
-    (PyCFunction)PyHttpCallbacksObject_set_on_data,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "set_on_metadata",
-    (PyCFunction)PyHttpCallbacksObject_set_on_metadata,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "set_on_trailers",
-    (PyCFunction)PyHttpCallbacksObject_set_on_trailers,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "set_on_error",
-    (PyCFunction)PyHttpCallbacksObject_set_on_error,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "set_on_complete",
-    (PyCFunction)PyHttpCallbacksObject_set_on_complete,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "set_on_cancel",
-    (PyCFunction)PyHttpCallbacksObject_set_on_cancel,
-    METH_VARARGS,
-    nullptr,
-  },
-  {nullptr},
-};
-
-static PyTypeObject PyHttpCallbacksType = {
-  PyVarObject_HEAD_INIT(nullptr, 0)
-
-  .tp_name = "c_types_wrapper.HttpCallbacks",
-  .tp_doc = "",
-  .tp_basicsize = sizeof(PyHttpCallbacksObject),
-  .tp_itemsize = 0,
-  .tp_flags = Py_TPFLAGS_DEFAULT,
-  .tp_new = PyHttpCallbacksObject_new,
-  .tp_methods = PyHttpCallbacksObject_methods,
-};
 
 
 // PyEngineObject wraps envoy-mobile's envoy_engine_t type into a Python class that creates an
@@ -311,7 +123,18 @@ static int PyStreamObject_init(PyStreamObject *self, PyObject *args, PyObject *k
 }
 
 static PyObject *PyStreamObject_send_headers(PyStreamObject *self, PyObject *args, PyObject *kwargs) {
-  return (PyObject *)self;
+  PyHeadersObject *headers;
+  bool close;
+  if (!PyArg_ParseTuple(args, "Op:send_headers", &headers, &close)) {
+    return nullptr;
+  }
+
+  envoy_status_t status = send_headers(self->stream, headers->headers, close);
+  std::cout << status << std::endl;
+  // TODO: do something with status
+
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
 static PyObject *PyStreamObject_send_data(PyStreamObject *self, PyObject *args, PyObject *kwargs) {
