@@ -1,3 +1,4 @@
+import time
 from typing import Any
 
 from py_envoy_mobile.wrapper import c_types_wrapper
@@ -30,9 +31,7 @@ class EnvoyConfig:
         template = self.template
         parameters = {
             **self.parameters,
-            "platform_filter_chain": c_types_wrapper.platform_filter_template().replace(
-                "{{ platform_filter_name }}", "python"
-            ),
+            "platform_filter_chain": "",
         }
         for key, value in parameters.items():
             key = "{{ key }}".replace("key", key)
@@ -64,5 +63,5 @@ def main(config: str, debug_level: str):
 if __name__ == "__main__":
     main(
         EnvoyConfig().build(),
-        "info",
+        "debug",
     )
