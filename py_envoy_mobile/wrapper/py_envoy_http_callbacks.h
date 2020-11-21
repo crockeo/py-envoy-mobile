@@ -22,6 +22,7 @@ struct PyHttpCallbacksObject {
 PyObject *PyHttpCallbacksObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
 int PyHttpCallbacksObject_init(PyHttpCallbacksObject *self, PyObject *args, PyObject *kwargs);
 
+// TODO: impl these callbacks
 PyObject *PyHttpCallbacksObject_set_on_headers(PyHttpCallbacksObject *self, PyObject *args);
 PyObject *PyHttpCallbacksObject_set_on_data(PyHttpCallbacksObject *self, PyObject *args);
 PyObject *PyHttpCallbacksObject_set_on_metadata(PyHttpCallbacksObject *self, PyObject *args);
