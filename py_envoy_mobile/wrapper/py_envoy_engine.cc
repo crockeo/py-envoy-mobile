@@ -47,3 +47,91 @@ PyObject *PyEngineObject_terminate(PyEngineObject *self) {
   Py_INCREF(Py_None);
   return Py_None;
 }
+
+PyObject *PyEngineObject_record_counter(PyEngineObject *self, PyObject *args) {
+  PyUnicodeObject *py_str;
+  uint64_t count;
+  if (!PyArg_ParseTuple(args, "sI", &py_str, &count)) {
+    return nullptr;
+  }
+
+  const char *str = PyUnicode_As_DATA(py_str);
+  if (str == nullptr) {
+    return nullptr;
+  }
+
+  auto status = record_counter(self->engine, str, count);
+  if (status == ENVOY_FAILURE) {
+    PyErr_SetStr(PyExc_RuntimeError, "failed to record counter");
+    return nullptr;
+  }
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
+PyObject *PyEngineObject_gauge_set(PyEngineObject *self, PyObject *args) {
+  PyUnicodeObject *py_str;
+  uint64_t value;
+  if (!PyArg_ParseTuple(args, "sI", &py_str, &value)) {
+    return nullptr;
+  }
+
+  const char *str = PyUnicode_As_DATA(py_str);
+  if (str == nullptr) {
+    return nullptr;
+  }
+
+  auto status = gauge_set(self->engine, str, value);
+  if (status == ENVOY_FAILURE) {
+    PyErr_SetStr(PyExc_RuntimeError, "failed to set gauge");
+    return nullptr;
+  }
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
+PyObject *PyEngineObject_gauge_add(PyEngineObject *self, PyObject *args) {
+  PyUnicodeObject *py_str;
+  uint64_t amount;
+  if (!PyArg_ParseTuple(args, "sI", &py_str, &amount)) {
+    return nullptr;
+  }
+
+  const char *str = PyUnicode_As_DATA(py_str);
+  if (str == nullptr) {
+    return nullptr;
+  }
+
+  auto status = gauge_add(self->engine, str, amount);
+  if (status == ENVOY_FAILURE) {
+    PyErr_SetStr(PyExc_RuntimeError, "failed to add to gauge");
+    return nullptr;
+  }
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
+PyObject *PyEngineObject_gauge_sub(PyEngineObject *self, PyObject *args) {
+  PyUnicodeObject *py_str;
+  uint64_t amount;
+  if (!PyArg_ParseTuple(args, "sI", &py_str, &amount)) {
+    return nullptr;
+  }
+
+  const char *str = PyUnicode_As_DATA(py_str);
+  if (str == nullptr) {
+    return nullptr;
+  }
+
+  auto status = gauge_sub(self->engine, str, amount);
+  if (status == ENVOY_FAILURE) {
+    PyErr_SetStr(PyExc_RuntimeError, "failed to sub from gauge");
+    return nullptr;
+  }
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}

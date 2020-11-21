@@ -15,14 +15,6 @@
 #include "py_envoy_http_callbacks.h"
 #include "py_envoy_stream.h"
 
-// Missing pieces:
-//   - implementation for stream methods (outline below)
-//
-//   - record_...
-//     - counter, gauge_set, gauge_add, gauge_sub
-//
-//   - register_platform_api
-
 
 static PyObject *wrapper_config_template() {
   PyObject *py_string_config_template;

@@ -12,6 +12,7 @@ struct PyStreamObject {
 PyObject *PyStreamObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
 int PyStreamObject_init(PyStreamObject *self, PyObject *args, PyObject *kwargs);
 
+// TODO: go and implement the stream methods
 PyObject *PyStreamObject_start(PyStreamObject *self, PyObject *args);
 PyObject *PyStreamObject_send_headers(PyStreamObject *self, PyObject *args);
 PyObject *PyStreamObject_send_data(PyStreamObject *self, PyObject *args);

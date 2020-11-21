@@ -15,6 +15,11 @@ int PyEngineObject_init(PyEngineObject *self, PyObject *args, PyObject *kwargs);
 PyObject *PyEngineObject_run(PyEngineObject *self, PyObject *args);
 PyObject *PyEngineObject_terminate(PyEngineObject *self);
 
+PyObject *PyEngineObject_record_counter(PyEngineObject *self, PyObject *args);
+PyObject *PyEngineObject_gauge_set(PyEngineObject *self, PyObject *args);
+PyObject *PyEngineObject_gauge_add(PyEngineObject *self, PyObject *args);
+PyObject *PyEngineObject_gauge_sub(PyEngineObject *self, PyObject *args);
+
 static PyMethodDef PyEngineObject_methods[] = {
   {
     "run",
@@ -26,6 +31,30 @@ static PyMethodDef PyEngineObject_methods[] = {
     "terminate",
     (PyCFunction)PyEngineObject_terminate,
     METH_NOARGS,
+    nullptr,
+  },
+  {
+    "record_counter",
+    (PyCFunction)PyEngineObject_record_counter,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "gauge_set",
+    (PyCFunction)PyEngineObject_gauge_set,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "gauge_add",
+    (PyCFunction)PyEngineObject_gauge_add,
+    METH_VARARGS,
+    nullptr,
+  },
+  {
+    "gauge_sub",
+    (PyCFunction)PyEngineObject_gauge_sub,
+    METH_VARARGS,
     nullptr,
   },
   {nullptr},
