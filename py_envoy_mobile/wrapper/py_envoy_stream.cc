@@ -72,7 +72,7 @@ PyObject *PyStreamObject_send_headers(PyStreamObject *self, PyObject *args) {
 PyObject *PyStreamObject_send_data(PyStreamObject *self, PyObject *args) {
   PyEnvoyDataObject *data;
   bool close;
-  if (!PyArg_ParseTuple(args, "Ob:send_data", &data, close)) {
+  if (!PyArg_ParseTuple(args, "Ob:send_data", &data, &close)) {
     return nullptr;
   }
 
