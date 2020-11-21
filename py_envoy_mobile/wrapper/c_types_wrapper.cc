@@ -24,7 +24,7 @@
 //   - register_platform_api
 
 
-static PyObject *c_types_wrapper_config_template() {
+static PyObject *wrapper_config_template() {
   PyObject *py_string_config_template;
   py_string_config_template = Py_BuildValue("s", config_template);
   if (py_string_config_template == nullptr) {
@@ -36,7 +36,7 @@ static PyObject *c_types_wrapper_config_template() {
   return py_string_config_template;
 }
 
-static PyObject *c_types_wrapper_platform_filter_template() {
+static PyObject *wrapper_platform_filter_template() {
   PyObject *py_string_platform_filter_template;
   py_string_platform_filter_template = Py_BuildValue("s", platform_filter_template);
   if (py_string_platform_filter_template == nullptr) {
@@ -48,16 +48,16 @@ static PyObject *c_types_wrapper_platform_filter_template() {
   return py_string_platform_filter_template;
 }
 
-static PyMethodDef c_types_wrapper_methods[] = {
+static PyMethodDef wrapper_methods[] = {
   {
     "config_template",
-    (PyCFunction)c_types_wrapper_config_template,
+    (PyCFunction)wrapper_config_template,
     METH_NOARGS,
     nullptr,
   },
   {
     "platform_filter_template",
-    (PyCFunction)c_types_wrapper_platform_filter_template,
+    (PyCFunction)wrapper_platform_filter_template,
     METH_NOARGS,
     nullptr,
   },
@@ -65,12 +65,12 @@ static PyMethodDef c_types_wrapper_methods[] = {
 };
 
 
-static struct PyModuleDef c_types_wrapper_module = {
+static struct PyModuleDef wrapper_module = {
   PyModuleDef_HEAD_INIT,
-  "c_types_wrapper",
+  "wrapper",
   nullptr,
   -1,
-  c_types_wrapper_methods,
+  wrapper_methods,
 };
 
 #ifdef __cplusplus
@@ -78,7 +78,7 @@ extern "C" {
 #endif
 
 PyMODINIT_FUNC
-PyInit_c_types_wrapper(void) {
+PyInit_wrapper(void) {
   std::vector<std::pair<PyTypeObject *, const char *>> types = {
     {
       &PyEnvoyDataType,
@@ -112,7 +112,7 @@ PyInit_c_types_wrapper(void) {
     }
   }
 
-  auto mod = PyModule_Create(&c_types_wrapper_module);
+  auto mod = PyModule_Create(&wrapper_module);
   if (mod == nullptr)
     return nullptr;
 

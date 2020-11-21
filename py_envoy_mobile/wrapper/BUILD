@@ -24,7 +24,7 @@ cc_library(
 
 
 cc_binary(
-    name = "c_types_wrapper.so",
+    name = "__init__.so",
     visibility = ["//visibility:public"],
     linkshared = True,
     srcs = [

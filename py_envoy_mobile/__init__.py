@@ -1,12 +1,12 @@
 import time
 from typing import Any
 
-from py_envoy_mobile.wrapper import c_types_wrapper
+from py_envoy_mobile import wrapper  # type: ignore
 
 
 class EnvoyConfig:
     def __init__(self):
-        self.template = c_types_wrapper.config_template()
+        self.template = wrapper.config_template()
 
         self.parameters = {
             "virtual_clusters": "[]",
@@ -51,9 +51,9 @@ def on_exit():
 
 
 def main(config: str, debug_level: str):
-    engine = c_types_wrapper.Engine()
+    engine = wrapper.Engine()
 
-    engine_callbacks = c_types_wrapper.EngineCallbacks().set_on_engine_running(on_engine_running).set_on_exit(on_exit)
+    engine_callbacks = wrapper.EngineCallbacks().set_on_engine_running(on_engine_running).set_on_exit(on_exit)
 
     # TODO: figure out why this causes an exception from envoy not being able to lock a mutex when we don't terminate
     engine.run(engine_callbacks, config, debug_level)
