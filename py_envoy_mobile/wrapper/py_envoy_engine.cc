@@ -55,14 +55,14 @@ PyObject *PyEngineObject_record_counter(PyEngineObject *self, PyObject *args) {
     return nullptr;
   }
 
-  const char *str = PyUnicode_As_DATA(py_str);
+  const char *str = PyUnicode_AsUTF8((PyObject *)py_str);
   if (str == nullptr) {
     return nullptr;
   }
 
   auto status = record_counter(self->engine, str, count);
   if (status == ENVOY_FAILURE) {
-    PyErr_SetStr(PyExc_RuntimeError, "failed to record counter");
+    PyErr_SetString(PyExc_RuntimeError, "failed to record counter");
     return nullptr;
   }
 
@@ -77,14 +77,14 @@ PyObject *PyEngineObject_gauge_set(PyEngineObject *self, PyObject *args) {
     return nullptr;
   }
 
-  const char *str = PyUnicode_As_DATA(py_str);
+  const char *str = PyUnicode_AsUTF8((PyObject *)py_str);
   if (str == nullptr) {
     return nullptr;
   }
 
-  auto status = gauge_set(self->engine, str, value);
+  auto status = record_gauge_set(self->engine, str, value);
   if (status == ENVOY_FAILURE) {
-    PyErr_SetStr(PyExc_RuntimeError, "failed to set gauge");
+    PyErr_SetString(PyExc_RuntimeError, "failed to set gauge");
     return nullptr;
   }
 
@@ -99,14 +99,14 @@ PyObject *PyEngineObject_gauge_add(PyEngineObject *self, PyObject *args) {
     return nullptr;
   }
 
-  const char *str = PyUnicode_As_DATA(py_str);
+  const char *str = PyUnicode_AsUTF8((PyObject *)py_str);
   if (str == nullptr) {
     return nullptr;
   }
 
-  auto status = gauge_add(self->engine, str, amount);
+  auto status = record_gauge_add(self->engine, str, amount);
   if (status == ENVOY_FAILURE) {
-    PyErr_SetStr(PyExc_RuntimeError, "failed to add to gauge");
+    PyErr_SetString(PyExc_RuntimeError, "failed to add to gauge");
     return nullptr;
   }
 
@@ -121,14 +121,14 @@ PyObject *PyEngineObject_gauge_sub(PyEngineObject *self, PyObject *args) {
     return nullptr;
   }
 
-  const char *str = PyUnicode_As_DATA(py_str);
+  const char *str = PyUnicode_AsUTF8((PyObject *)py_str);
   if (str == nullptr) {
     return nullptr;
   }
 
-  auto status = gauge_sub(self->engine, str, amount);
+  auto status = record_gauge_sub(self->engine, str, amount);
   if (status == ENVOY_FAILURE) {
-    PyErr_SetStr(PyExc_RuntimeError, "failed to sub from gauge");
+    PyErr_SetString(PyExc_RuntimeError, "failed to sub from gauge");
     return nullptr;
   }
 

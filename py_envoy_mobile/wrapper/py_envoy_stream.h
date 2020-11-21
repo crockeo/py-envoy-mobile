@@ -12,7 +12,6 @@ struct PyStreamObject {
 PyObject *PyStreamObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
 int PyStreamObject_init(PyStreamObject *self, PyObject *args, PyObject *kwargs);
 
-// TODO: go and implement the stream methods
 PyObject *PyStreamObject_start(PyStreamObject *self, PyObject *args);
 PyObject *PyStreamObject_send_headers(PyStreamObject *self, PyObject *args);
 PyObject *PyStreamObject_send_data(PyStreamObject *self, PyObject *args);
@@ -55,12 +54,6 @@ static PyMethodDef PyStreamObject_methods[] = {
   {
     "reset",
     (PyCFunction)PyStreamObject_reset,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "close",
-    (PyCFunction)PyStreamObject_close,
     METH_VARARGS,
     nullptr,
   },
