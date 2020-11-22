@@ -62,10 +62,7 @@ def main(config: str, debug_level: str):
     stream.start(wrapper.HttpCallbacks())
 
     headers = (
-        wrapper.Headers()
-        .set_header(wrapper.Data("method"), wrapper.Data("POST"))
-        .set_header(wrapper.Data("authority"), wrapper.Data("google.com"))
-        .set_header(wrapper.Data("path"), wrapper.Data("/"))
+        wrapper.Headers().set_header("method", "POST").set_header("authority", "google.com").set_header("path", "/")
     )
     stream.send_headers(headers, True)
 

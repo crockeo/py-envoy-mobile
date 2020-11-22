@@ -1,5 +1,7 @@
 #include "py_envoy_headers.h"
 
+#include "library/common/types/c_types.h"
+
 
 PyObject *PyHeadersObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
   PyHeadersObject *self;
@@ -18,9 +20,10 @@ void PyHeadersObject_dealloc(PyHeadersObject *self) {
 }
 
 PyObject *PyHeadersObject_set_header(PyHeadersObject *self, PyObject *args) {
-  PyEnvoyDataObject *name;
-  PyEnvoyDataObject *value;
-  if (PyArg_ParseTuple(args, "OO:set_header", &name, &value) < 0) {
+  uint8_t *name_data, *value_data;
+  Py_ssize_t name_len, value_len;
+
+  if (!PyArg_ParseTuple(args, "s#s#:set_header", &name_data, &name_len, &value_data, &value_len)) {
     return nullptr;
   }
 
@@ -40,8 +43,8 @@ PyObject *PyHeadersObject_set_header(PyHeadersObject *self, PyObject *args) {
   }
 
   envoy_header header = {
-    copy_envoy_data(name->data.length, name->data.bytes),
-    copy_envoy_data(name->data.length, name->data.bytes),
+    copy_envoy_data(name_len, name_data),
+    copy_envoy_data(value_len, value_data),
   };
 
   self->headers.headers[self->headers.length] = header;
