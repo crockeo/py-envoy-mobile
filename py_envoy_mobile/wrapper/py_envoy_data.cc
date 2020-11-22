@@ -1,5 +1,6 @@
 #include "py_envoy_data.h"
 
+
 PyObject *PyEnvoyData_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
   PyEnvoyDataObject *self;
   self = (PyEnvoyDataObject *)type->tp_alloc(type, 0);
@@ -13,29 +14,19 @@ PyObject *PyEnvoyData_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) 
 }
 
 int PyEnvoyData_init(PyEnvoyDataObject *self, PyObject *args, PyObject *kwargs) {
-  Py_buffer buffer;
-  if (!PyArg_ParseTuple(args, "s*", &buffer)) {
+  unsigned const char *data;
+  Py_ssize_t data_len;
+  if (!PyArg_ParseTuple(args, "s#", &data, &data_len)) {
     return -1;
   }
 
-  // we copy the data contained inside the buffer so we can tie the lifecycle of the envoy_data
-  // contents to the lifecycle of the PyEnvoyDataObject.
-  void *bufCpy = (unsigned char *)safe_malloc(buffer.len);
-  memcpy(bufCpy, buffer.buf, buffer.len);
-
-  self->data.length = buffer.len;
-  self->data.bytes = (unsigned char *)bufCpy;
-  self->data.release = envoy_noop_release;
-  self->data.context = nullptr;
+  self->data = copy_envoy_data(data_len, data);
 
   return 0;
 }
 
 void PyEnvoyData_dealloc(PyEnvoyDataObject *self) {
   if (self->data.bytes != nullptr) {
-    // We assume that, if the bytes are populated, then the rest of the envoy_data object is
-    // well-formed.
-    delete self->data.bytes;
     self->data.release(self->data.context);
   }
   Py_TYPE(self)->tp_free((PyObject *)self);

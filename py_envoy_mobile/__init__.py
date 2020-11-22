@@ -57,6 +57,18 @@ def main(config: str, debug_level: str):
 
     # TODO: figure out why this causes an exception from envoy not being able to lock a mutex when we don't terminate
     engine.run(engine_callbacks, config, debug_level)
+
+    stream = wrapper.Stream(engine)
+    stream.start(wrapper.HttpCallbacks())
+
+    headers = (
+        wrapper.Headers()
+        .set_header(wrapper.Data("method"), wrapper.Data("POST"))
+        .set_header(wrapper.Data("authority"), wrapper.Data("google.com"))
+        .set_header(wrapper.Data("path"), wrapper.Data("/"))
+    )
+    stream.send_headers(headers, True)
+
     engine.terminate()
 
 
