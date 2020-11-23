@@ -1,38 +1,36 @@
-cc_library(
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
+
+pybind_library(
     name = "wrapper",
     srcs = [
-        "py_envoy_data.cc",
-        "py_envoy_engine.cc",
-        "py_envoy_engine_callbacks.cc",
-        "py_envoy_headers.cc",
-        "py_envoy_http_callbacks.cc",
-        "py_envoy_stream.cc",
+        # "py_envoy_data.cc",
+        # "py_envoy_engine.cc",
+        # "py_envoy_engine_callbacks.cc",
+        # "py_envoy_headers.cc",
+        # "py_envoy_http_callbacks.cc",
+        # "py_envoy_stream.cc",
     ],
     hdrs = [
-        "py_envoy_data.h",
-        "py_envoy_engine.h",
-        "py_envoy_engine_callbacks.h",
-        "py_envoy_headers.h",
-        "py_envoy_http_callbacks.h",
-        "py_envoy_stream.h",
+        # "py_envoy_data.h",
+        # "py_envoy_engine.h",
+        # "py_envoy_engine_callbacks.h",
+        # "py_envoy_headers.h",
+        # "py_envoy_http_callbacks.h",
+        # "py_envoy_stream.h",
     ],
     deps = [
-        "@python//:python-lib",
         "@envoy_mobile//library/common:envoy_main_interface_lib",
     ],
 )
 
-
-cc_binary(
-    name = "__init__.so",
+pybind_extension(
+    name = "__init__",
     visibility = ["//visibility:public"],
-    linkshared = True,
     srcs = [
-        "c_types_wrapper.cc",
+        "py_envoy_wrapper.cc",
     ],
     deps = [
         ":wrapper",
-        "@python//:python-lib",
         "@envoy_mobile//library/common:envoy_main_interface_lib",
     ],
 )
