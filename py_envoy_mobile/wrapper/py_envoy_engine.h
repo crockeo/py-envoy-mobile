@@ -1,74 +1,46 @@
 #pragma once
 
+#include "pybind11/pybind11.h"
 #include "library/common/types/c_types.h"
-#include "Python.h"
+
+namespace py = pybind11;
 
 
-struct PyEngineObject {
-  PyObject_HEAD
-  envoy_engine_t engine;
+// EngineCallbacks wraps the envoy_engine_callbacks type, which includes two callbacks:
+//
+//   * on_engine_running -- this runs when the Envoy engine is initialized and ready to handle
+//     traffic
+//
+//   * on_exit -- this runs when the engine exits
+struct EngineCallbacks {
+  EngineCallbacks();
+
+  EngineCallbacks& set_on_engine_running(std::function<void ()> on_engine_running);
+  EngineCallbacks& set_on_exit(std::function<void ()> on_exit);
+
+  std::function<void ()> on_engine_running;
+  std::function<void ()> on_exit;
+
+  envoy_engine_callbacks callbacks;
 };
 
-PyObject *PyEngineObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
-int PyEngineObject_init(PyEngineObject *self, PyObject *args, PyObject *kwargs);
+// Engine wraps the envoy_engine_t type, which is the central handle to performing networking in
+// envoy-mobile.
+//
+// There are several functions in envoy-mobile that receive an envoy_engine_t as the first argument.
+// These functions are all included here, except for when they're used to create another data type.
+class Engine {
+ public:
+  Engine();
 
-PyObject *PyEngineObject_run(PyEngineObject *self, PyObject *args);
-PyObject *PyEngineObject_terminate(PyEngineObject *self);
+  void run(const EngineCallbacks& callbacks, const std::string& config, const std::string& log_level);
+  void terminate();
 
-PyObject *PyEngineObject_record_counter(PyEngineObject *self, PyObject *args);
-PyObject *PyEngineObject_gauge_set(PyEngineObject *self, PyObject *args);
-PyObject *PyEngineObject_gauge_add(PyEngineObject *self, PyObject *args);
-PyObject *PyEngineObject_gauge_sub(PyEngineObject *self, PyObject *args);
+  void record_counter(const std::string& name, uint64_t count);
+  void gauge_set(const std::string& name, uint64_t value);
+  void gauge_add(const std::string& name, uint64_t amount);
+  void gauge_sub(const std::string& name, uint64_t amount);
 
-static PyMethodDef PyEngineObject_methods[] = {
-  {
-    "run",
-    (PyCFunction)PyEngineObject_run,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "terminate",
-    (PyCFunction)PyEngineObject_terminate,
-    METH_NOARGS,
-    nullptr,
-  },
-  {
-    "record_counter",
-    (PyCFunction)PyEngineObject_record_counter,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "gauge_set",
-    (PyCFunction)PyEngineObject_gauge_set,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "gauge_add",
-    (PyCFunction)PyEngineObject_gauge_add,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "gauge_sub",
-    (PyCFunction)PyEngineObject_gauge_sub,
-    METH_VARARGS,
-    nullptr,
-  },
-  {nullptr},
-};
-
-static PyTypeObject PyEngineType = {
-  PyVarObject_HEAD_INIT(nullptr, 0)
-
-  .tp_name = "c_types_wrapper.Engine",
-  .tp_doc = "envoy-mobile engine handle",
-  .tp_basicsize = sizeof(PyEngineObject),
-  .tp_itemsize = 0,
-  .tp_flags = Py_TPFLAGS_DEFAULT,
-  .tp_new = PyEngineObject_new,
-  .tp_init = (initproc)PyEngineObject_init,
-  .tp_methods = PyEngineObject_methods,
+ private:
+  envoy_engine_t engine_;
 };

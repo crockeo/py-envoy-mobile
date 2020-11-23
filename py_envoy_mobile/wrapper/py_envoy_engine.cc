@@ -1,137 +1,86 @@
 #include "py_envoy_engine.h"
 
 #include "library/common/main_interface.h"
-#include "library/common/types/c_types.h"
-#include "py_envoy_engine_callbacks.h"
 
 
-PyObject *PyEngineObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
-  PyEngineObject *self;
-  self = (PyEngineObject *)type->tp_alloc(type, 0);
-  if (self != nullptr) {
-    self->engine = 0;
-  }
-  return (PyObject *)self;
+// these functions are defined statically (in both senses!) because:
+//
+//   - (in the sense of why they're not just std::function directly) envoy-mobile requires a
+//     function pointer, which lambdas can't provide
+//
+//   - (in the sense of the static keyword) because they're only used here
+static void py_dispatch_on_engine_running(void *context) {
+  EngineCallbacks *callbacks = static_cast<EngineCallbacks *>(context);
+  callbacks->on_engine_running();
 }
 
-int PyEngineObject_init(PyEngineObject *self, PyObject *args, PyObject *kwargs) {
-  envoy_engine_t engine = init_engine();
-  if (engine == 0) {
-    return -1;
-  }
-
-  self->engine = engine;
-  return 0;
+static void py_dispatch_on_exit(void *context) {
+  EngineCallbacks *callbacks = static_cast<EngineCallbacks *>(context);
+  callbacks->on_exit();
 }
 
-PyObject *PyEngineObject_run(PyEngineObject *self, PyObject *args) {
-  PyEngineCallbacksObject *callbacks;
-  char *config;
-  char *log_level;
-  if (!PyArg_ParseTuple(args, "Oss", &callbacks, &config, &log_level)) {
-    return nullptr;
-  }
 
-  envoy_status_t status = run_engine(self->engine, callbacks->engine_callbacks, config, log_level);
+EngineCallbacks::EngineCallbacks() {
+  this->callbacks = {
+    .on_engine_running = &py_dispatch_on_engine_running,
+    .on_exit = &py_dispatch_on_exit,
+    .context = this,
+  };
+}
+
+EngineCallbacks& EngineCallbacks::set_on_engine_running(std::function<void ()> on_engine_running) {
+  this->on_engine_running = on_engine_running;
+  return *this;
+}
+
+EngineCallbacks& EngineCallbacks::set_on_exit(std::function<void ()> on_exit) {
+  this->on_exit = on_exit;
+  return *this;
+}
+
+
+Engine::Engine() {
+  this->engine_ = init_engine();
+  if (this->engine_ == 0) {
+    // TODO(chillen): convert this to a python exception
+  }
+}
+
+void Engine::run(const EngineCallbacks& callbacks, const std::string& config, const std::string& log_level) {
+  envoy_status_t status = run_engine(this->engine_, callbacks.callbacks, config.c_str(), log_level.c_str());
   if (status == ENVOY_FAILURE) {
-    PyErr_SetString(PyExc_RuntimeError, "failed to run engine");
-    return nullptr;
+    // TODO(chillen): convert this to a python exception
   }
-
-  Py_INCREF(Py_None);
-  return Py_None;
 }
 
-PyObject *PyEngineObject_terminate(PyEngineObject *self) {
-  terminate_engine(self->engine);
-  Py_INCREF(Py_None);
-  return Py_None;
+void Engine::terminate() {
+  terminate_engine(self->engine_);
 }
 
-PyObject *PyEngineObject_record_counter(PyEngineObject *self, PyObject *args) {
-  PyUnicodeObject *py_str;
-  uint64_t count;
-  if (!PyArg_ParseTuple(args, "sI", &py_str, &count)) {
-    return nullptr;
-  }
-
-  const char *str = PyUnicode_AsUTF8((PyObject *)py_str);
-  if (str == nullptr) {
-    return nullptr;
-  }
-
-  auto status = record_counter(self->engine, str, count);
+void Engine::record_counter(const std::string& name, uint64_t count) {
+  envoy_status_t status = record_counter_inc(this->engine_, name.c_str(), count);
   if (status == ENVOY_FAILURE) {
-    PyErr_SetString(PyExc_RuntimeError, "failed to record counter");
-    return nullptr;
+    // TODO(chillen): convert this to a python exception
   }
-
-  Py_INCREF(Py_None);
-  return Py_None;
 }
 
-PyObject *PyEngineObject_gauge_set(PyEngineObject *self, PyObject *args) {
-  PyUnicodeObject *py_str;
-  uint64_t value;
-  if (!PyArg_ParseTuple(args, "sI", &py_str, &value)) {
-    return nullptr;
-  }
-
-  const char *str = PyUnicode_AsUTF8((PyObject *)py_str);
-  if (str == nullptr) {
-    return nullptr;
-  }
-
-  auto status = record_gauge_set(self->engine, str, value);
+void Engine::gauge_set(const std::string& name, uint64_t value) {
+  envoy_status_t status = record_gauge_set(this->engine_, name.c_str(), value);
   if (status == ENVOY_FAILURE) {
-    PyErr_SetString(PyExc_RuntimeError, "failed to set gauge");
-    return nullptr;
+    // TODO(chillen): convert this to a python exception
   }
-
-  Py_INCREF(Py_None);
-  return Py_None;
 }
 
-PyObject *PyEngineObject_gauge_add(PyEngineObject *self, PyObject *args) {
-  PyUnicodeObject *py_str;
-  uint64_t amount;
-  if (!PyArg_ParseTuple(args, "sI", &py_str, &amount)) {
-    return nullptr;
-  }
-
-  const char *str = PyUnicode_AsUTF8((PyObject *)py_str);
-  if (str == nullptr) {
-    return nullptr;
-  }
-
-  auto status = record_gauge_add(self->engine, str, amount);
+void Engine::gauge_add(const std::string& name, uint64_t amount) {
+  envoy_status_t status = record_gauge_add(this->engine_, name.c_str(), amount);
   if (status == ENVOY_FAILURE) {
-    PyErr_SetString(PyExc_RuntimeError, "failed to add to gauge");
-    return nullptr;
+    // TODO(chillen): convert this to a python exception
   }
-
-  Py_INCREF(Py_None);
-  return Py_None;
 }
 
-PyObject *PyEngineObject_gauge_sub(PyEngineObject *self, PyObject *args) {
-  PyUnicodeObject *py_str;
-  uint64_t amount;
-  if (!PyArg_ParseTuple(args, "sI", &py_str, &amount)) {
-    return nullptr;
-  }
-
-  const char *str = PyUnicode_AsUTF8((PyObject *)py_str);
-  if (str == nullptr) {
-    return nullptr;
-  }
-
-  auto status = record_gauge_sub(self->engine, str, amount);
+void Engine::gauge_sub(const std::string& name, uint64_t amount) {
+  envoy_status_t status = record_gauge_sub(this->engine_, name.c_str(), amount);
   if (status == ENVOY_FAILURE) {
-    PyErr_SetString(PyExc_RuntimeError, "failed to sub from gauge");
-    return nullptr;
+    // TODO(chillen): convert this to a python exception
   }
-
-  Py_INCREF(Py_None);
-  return Py_None;
 }
