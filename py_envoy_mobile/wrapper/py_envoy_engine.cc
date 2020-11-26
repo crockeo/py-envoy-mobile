@@ -58,25 +58,19 @@ void Engine::run(const EngineCallbacks& callbacks, const std::string& config, co
   }
 
   // busy wait for thunks
-  while (true) {
+  while (!this->terminated_) {
     std::optional<EngineCallback> thunk;
     {
       std::unique_lock<std::mutex> lock(this->thunks_mtx_);
-      if (this->thunks_.size() > 0) {
-        thunk = this->thunks_.back();
-        this->thunks_.pop_back();
-      }
+      this->thunks_cv_.wait(lock, [this]{ return this->thunks_.size() > 0; });
+
+      thunk = this->thunks_.back();
+      this->thunks_.pop_back();
     }
 
     if (thunk.has_value()) {
       thunk.value()(*this);
     }
-
-    if (this->terminated_) {
-      break;
-    }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
 }
 
@@ -116,4 +110,5 @@ void Engine::gauge_sub(const std::string& name, uint64_t amount) {
 void Engine::put_thunk(const EngineCallback&& thunk) {
   std::unique_lock<std::mutex> lock(this->thunks_mtx_);
   this->thunks_.push_back(std::move(thunk));
+  this->thunks_cv_.notify_one();
 }

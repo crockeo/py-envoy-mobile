@@ -54,6 +54,7 @@ class Engine {
   envoy_engine_t engine_;
 
   std::mutex thunks_mtx_;
+  std::condition_variable thunks_cv_;
   std::list<std::function<void (Engine&)>> thunks_;
   bool terminated_;
 };

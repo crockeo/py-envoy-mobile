@@ -54,4 +54,4 @@ if __name__ == "__main__":
 
     # note: this implicitly waits, maybe change that in the future to put the control into the
     # application layer :)
-    engine.run(callbacks, EnvoyConfig().build(), "debug")
+    engine.run(callbacks, EnvoyConfig().build(), "info")
