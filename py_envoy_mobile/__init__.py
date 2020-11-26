@@ -37,12 +37,14 @@ class EnvoyConfig:
         return template
 
 
-def on_engine_running():
+def on_engine_running(engine: wrapper.Engine):
     print("on_engine_running")
     engine.terminate()
 
 
-def on_exit():
+# TODO: this is never actually called, because we call terminate() from within on_engine_running and
+# kill the Engine event loop
+def on_exit(engine: wrapper.Engine):
     print("on_exit")
 
 

@@ -9,6 +9,7 @@
 
 
 class Engine;
+using EngineCallback = std::function<void (Engine&)>;
 
 
 // EngineCallbacks wraps the envoy_engine_callbacks type, which includes two callbacks:
@@ -20,11 +21,11 @@ class Engine;
 struct EngineCallbacks {
   EngineCallbacks(std::shared_ptr<Engine> engine);
 
-  EngineCallbacks& set_on_engine_running(std::function<void ()> on_engine_running);
-  EngineCallbacks& set_on_exit(std::function<void ()> on_exit);
+  EngineCallbacks& set_on_engine_running(EngineCallback on_engine_running);
+  EngineCallbacks& set_on_exit(EngineCallback on_exit);
 
-  std::function<void ()> on_engine_running;
-  std::function<void ()> on_exit;
+  EngineCallback on_engine_running;
+  EngineCallback on_exit;
 
   envoy_engine_callbacks callbacks;
   std::shared_ptr<Engine> engine;

@@ -8,32 +8,21 @@
 #include "library/common/main_interface.h"
 
 
-// these functions are defined statically (in both senses!) because:
-//
-//   - (in the sense of why they're not just std::function directly) envoy-mobile requires a
-//     function pointer, which lambdas can't provide
-//
-//   - (in the sense of the static keyword) because they're only used here
 static void py_dispatch_on_engine_running(void *context) {
   EngineCallbacks *callbacks = static_cast<EngineCallbacks *>(context);
   callbacks->engine->put_thunk([=](Engine& engine) {
-    // TODO: call with engine
-    callbacks->on_engine_running();
+    callbacks->on_engine_running(engine);
   });
 }
 
 static void py_dispatch_on_exit(void *context) {
   EngineCallbacks *callbacks = static_cast<EngineCallbacks *>(context);
   callbacks->engine->put_thunk([=](Engine& engine) {
-    // TODO: call with engine
-    callbacks->on_exit();
+    callbacks->on_exit(engine);
   });
 }
 
 
-//
-// EngineCallbacsk
-//
 EngineCallbacks::EngineCallbacks(std::shared_ptr<Engine> engine) {
   this->callbacks = {
     .on_engine_running = &py_dispatch_on_engine_running,
@@ -43,20 +32,17 @@ EngineCallbacks::EngineCallbacks(std::shared_ptr<Engine> engine) {
   this->engine = engine;
 }
 
-EngineCallbacks& EngineCallbacks::set_on_engine_running(std::function<void ()> on_engine_running) {
+EngineCallbacks& EngineCallbacks::set_on_engine_running(EngineCallback on_engine_running) {
   this->on_engine_running = on_engine_running;
   return *this;
 }
 
-EngineCallbacks& EngineCallbacks::set_on_exit(std::function<void ()> on_exit) {
+EngineCallbacks& EngineCallbacks::set_on_exit(EngineCallback on_exit) {
   this->on_exit = on_exit;
   return *this;
 }
 
 
-//
-// Engine
-//
 Engine::Engine() {
   this->engine_ = init_engine();
   if (this->engine_ == 0) {
@@ -73,7 +59,7 @@ void Engine::run(const EngineCallbacks& callbacks, const std::string& config, co
 
   // busy wait for thunks
   while (true) {
-    std::optional<std::function<void (Engine&)>> thunk;
+    std::optional<EngineCallback> thunk;
     {
       std::unique_lock<std::mutex> lock(this->thunks_mtx_);
       if (this->thunks_.size() > 0) {
@@ -127,7 +113,7 @@ void Engine::gauge_sub(const std::string& name, uint64_t amount) {
   }
 }
 
-void Engine::put_thunk(const std::function<void (Engine&)>&& thunk) {
+void Engine::put_thunk(const EngineCallback&& thunk) {
   std::unique_lock<std::mutex> lock(this->thunks_mtx_);
   this->thunks_.push_back(std::move(thunk));
 }
