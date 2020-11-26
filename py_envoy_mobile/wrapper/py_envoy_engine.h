@@ -1,9 +1,14 @@
 #pragma once
 
-#include "pybind11/pybind11.h"
+#include <functional>
+#include <list>
+#include <string>
+#include <thread>
+
 #include "library/common/types/c_types.h"
 
-namespace py = pybind11;
+
+class Engine;
 
 
 // EngineCallbacks wraps the envoy_engine_callbacks type, which includes two callbacks:
@@ -13,7 +18,7 @@ namespace py = pybind11;
 //
 //   * on_exit -- this runs when the engine exits
 struct EngineCallbacks {
-  EngineCallbacks();
+  EngineCallbacks(std::shared_ptr<Engine> engine);
 
   EngineCallbacks& set_on_engine_running(std::function<void ()> on_engine_running);
   EngineCallbacks& set_on_exit(std::function<void ()> on_exit);
@@ -22,6 +27,7 @@ struct EngineCallbacks {
   std::function<void ()> on_exit;
 
   envoy_engine_callbacks callbacks;
+  std::shared_ptr<Engine> engine;
 };
 
 // Engine wraps the envoy_engine_t type, which is the central handle to performing networking in
@@ -41,6 +47,12 @@ class Engine {
   void gauge_add(const std::string& name, uint64_t amount);
   void gauge_sub(const std::string& name, uint64_t amount);
 
+  void put_thunk(const std::function<void (Engine&)>&& thunk);
+
  private:
   envoy_engine_t engine_;
+
+  std::mutex thunks_mtx_;
+  std::list<std::function<void (Engine&)>> thunks_;
+  bool terminated_;
 };

@@ -15,7 +15,10 @@ new_git_repository(
     commit = "f1abf5d9159b805674197f6bc443592e631c9130",
 )
 load("@pybind11_bazel//:python_configure.bzl", "python_configure")
-python_configure(name = "local_config_python")
+python_configure(
+    name = "local_config_python",
+    python_version = "3",
+)
 
 local_repository(
     name = "envoy_mobile",
