@@ -1,55 +1,32 @@
 #include "py_envoy_headers.h"
 
-#include "library/common/types/c_types.h"
 
-
-PyObject *PyHeadersObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
-  PyHeadersObject *self;
-  self = (PyHeadersObject *)type->tp_alloc(type, 0);
-  if (self != nullptr) {
-    self->headers.length = 0;
-    self->headers.headers = (envoy_header *)safe_malloc(sizeof(envoy_header));
-    self->capacity = 1;
-  }
-  return (PyObject *)self;
+Headers& Headers::add(const std::string& name, const std::string& value) {
+  this->headers[name] = value;
+  return *this;
 }
 
-void PyHeadersObject_dealloc(PyHeadersObject *self) {
-  release_envoy_headers(self->headers);
-  Py_TYPE(self)->tp_free((PyObject *)self);
+Headers Headers::from_envoy_headers(envoy_headers headers) {
+  // TODO: implement it in this direction
+  return Headers();
 }
 
-PyObject *PyHeadersObject_set_header(PyHeadersObject *self, PyObject *args) {
-  uint8_t *name_data, *value_data;
-  Py_ssize_t name_len, value_len;
+envoy_headers Headers::to_envoy_headers() const {
+  envoy_headers headers;
 
-  if (!PyArg_ParseTuple(args, "s#s#:set_header", &name_data, &name_len, &value_data, &value_len)) {
-    return nullptr;
+  headers.length = this->headers.size();
+  headers.headers = (envoy_header *)safe_malloc(sizeof(envoy_header) * this->headers.size());
+
+  int i = 0;
+  for (const auto& pair : this->headers) {
+    envoy_data key = copy_envoy_data(pair.first.size(), (const unsigned char *)pair.first.c_str());
+    envoy_data value = copy_envoy_data(pair.second.size(), (const unsigned char *)pair.second.c_str());
+
+    headers.headers[i] = envoy_header {
+      .key = key,
+      .value = value,
+    };
   }
 
-  // NOTE: currently we assume that a header with the same value is never set twice. i.e. we just
-  // append the envoy_header to the list, rather than trying to replace its existing value.
-  if (self->headers.length >= self->capacity) {
-    auto old_length = sizeof(envoy_header) * self->capacity;
-    auto new_length = old_length * 2;
-
-    envoy_header *new_headers = (envoy_header *)safe_malloc(new_length);
-    memcpy(new_headers, self->headers.headers, old_length);
-
-    free(self->headers.headers);
-    self->headers.headers = new_headers;
-
-    self->capacity *= 2;
-  }
-
-  envoy_header header = {
-    copy_envoy_data(name_len, name_data),
-    copy_envoy_data(value_len, value_data),
-  };
-
-  self->headers.headers[self->headers.length] = header;
-  self->headers.length++;
-
-  Py_INCREF(self);
-  return (PyObject *)self;
+  return headers;
 }

@@ -5,6 +5,7 @@ namespace py = pybind11;
 #include "library/common/main_interface.h"
 #include "py_envoy_data.h"
 #include "py_envoy_engine.h"
+#include "py_envoy_headers.h"
 
 
 const std::string get_config_template() {
@@ -36,4 +37,8 @@ PYBIND11_MODULE(wrapper, m) {
     .def("gauge_set", &Engine::gauge_set)
     .def("gauge_add", &Engine::gauge_add)
     .def("gauge_sub", &Engine::gauge_sub);
+
+  py::class_<Headers>(m, "Headers")
+    .def(py::init<>())
+    .def("add", &Headers::add);
 }
