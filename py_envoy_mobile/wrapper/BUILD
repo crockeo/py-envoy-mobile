@@ -7,17 +7,13 @@ cc_library(
         "py_envoy_data.cc",
         "py_envoy_engine.cc",
         "py_envoy_headers.cc",
-
-        # "py_envoy_http_callbacks.cc",
-        # "py_envoy_stream.cc",
+        "py_envoy_stream.cc",
     ],
     hdrs = [
         "py_envoy_data.h",
         "py_envoy_engine.h",
         "py_envoy_headers.h",
-
-        # "py_envoy_http_callbacks.h",
-        # "py_envoy_stream.h",
+        "py_envoy_stream.h",
     ],
     deps = [
         "@envoy_mobile//library/common:envoy_main_interface_lib",

@@ -6,6 +6,7 @@ namespace py = pybind11;
 #include "py_envoy_data.h"
 #include "py_envoy_engine.h"
 #include "py_envoy_headers.h"
+#include "py_envoy_stream.h"
 
 
 const std::string get_config_template() {
@@ -41,4 +42,25 @@ PYBIND11_MODULE(wrapper, m) {
   py::class_<Headers>(m, "Headers")
     .def(py::init<>())
     .def("add", &Headers::add);
+
+  py::class_<StreamCallbacks>(m, "StreamCallbacks")
+    .def(py::init<std::shared_ptr<Engine>, std::shared_ptr<Stream>>())
+    .def("set_on_headers", &StreamCallbacks::set_on_headers)
+    .def("set_on_data", &StreamCallbacks::set_on_data)
+    .def("set_on_metadata", &StreamCallbacks::set_on_metadata)
+    .def("set_on_trailers", &StreamCallbacks::set_on_trailers)
+    .def("set_on_error", &StreamCallbacks::set_on_error)
+    .def("set_on_complete", &StreamCallbacks::set_on_complete)
+    .def("set_on_cancel", &StreamCallbacks::set_on_cancel);
+
+  py::class_<Stream, std::shared_ptr<Stream>>(m, "Stream")
+    .def(py::init<std::shared_ptr<Engine>>())
+    // TODO: figure out why these cause a compiler error
+    // .def("start", &Stream::start)
+    // .def("send_headers", &Stream::send_headers)
+    // .def("send_data", &Stream::send_data)
+    // .def("send_metadata", &Stream::send_metadata)
+    // .def("send_trailers", &Stream::send_trailers)
+    .def("reset", &Stream::reset)
+    .def("close", &Stream::close);
 }
