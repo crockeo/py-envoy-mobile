@@ -17,6 +17,7 @@ const std::string get_platform_filter_template() {
   return std::string(platform_filter_template);
 }
 
+// TODO: figure out why we're failing at import time again
 PYBIND11_MODULE(wrapper, m) {
   m.def("get_config_template", &get_config_template);
   m.def("get_platform_filter_template", &get_platform_filter_template);
@@ -44,7 +45,7 @@ PYBIND11_MODULE(wrapper, m) {
     .def("add", &Headers::add);
 
   py::class_<StreamCallbacks>(m, "StreamCallbacks")
-    .def(py::init<std::shared_ptr<Engine>, std::shared_ptr<Stream>>())
+    .def(py::init<std::shared_ptr<Stream>>())
     .def("set_on_headers", &StreamCallbacks::set_on_headers)
     .def("set_on_data", &StreamCallbacks::set_on_data)
     .def("set_on_metadata", &StreamCallbacks::set_on_metadata)
@@ -55,12 +56,11 @@ PYBIND11_MODULE(wrapper, m) {
 
   py::class_<Stream, std::shared_ptr<Stream>>(m, "Stream")
     .def(py::init<std::shared_ptr<Engine>>())
-    // TODO: figure out why these cause a compiler error
-    // .def("start", &Stream::start)
-    // .def("send_headers", &Stream::send_headers)
-    // .def("send_data", &Stream::send_data)
-    // .def("send_metadata", &Stream::send_metadata)
-    // .def("send_trailers", &Stream::send_trailers)
+    .def("start", &Stream::start)
+    .def("send_headers", &Stream::send_headers)
+    .def("send_data", &Stream::send_data)
+    .def("send_metadata", &Stream::send_metadata)
+    .def("send_trailers", &Stream::send_trailers)
     .def("reset", &Stream::reset)
     .def("close", &Stream::close);
 }

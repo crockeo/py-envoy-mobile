@@ -54,6 +54,8 @@ class Engine {
 
   void put_thunk(const std::function<void (Engine&)>&& thunk);
 
+  envoy_engine_t handle();
+
  private:
   envoy_engine_t engine_;
 

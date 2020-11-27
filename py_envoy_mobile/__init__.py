@@ -37,8 +37,52 @@ class EnvoyConfig:
         return template
 
 
+def on_headers(engine: wrapper.Engine, stream: wrapper.Stream, data: wrapper.Data, closed: bool):
+    print("on headers")
+
+
+def on_data(engine: wrapper.Engine, stream: wrapper.Stream, headers: wrapper.Headers, closed: bool):
+    print("on data")
+
+
+def on_metadata(engine: wrapper.Engine, stream: wrapper.Stream, metadata: wrapper.Headers):
+    print("on metadata")
+
+
+def on_trailers(engine: wrapper.Engine, stream: wrapper.Stream, trailers: wrapper.Headers):
+    print("on trailers")
+
+
+# TODO: enable this once we have errors coming up
+# def on_error():
+#     pass
+
+
+def on_complete(engine: wrapper.Engine, stream: wrapper.Stream):
+    print("on complete")
+
+
+def on_cancel(engine: wrapper.Engine, stream: wrapper.Stream):
+    print("on cancel")
+
+
 def on_engine_running(engine: wrapper.Engine):
     print("on_engine_running")
+
+    stream = wrapper.Stream(engine)
+    stream_callbacks = (
+        wrapper.StreamCallbacks(stream)
+        .set_on_headers(on_headers)
+        .set_on_data(on_data)
+        .set_on_metadata(on_metadata)
+        .set_on_trailers(on_trailers)
+        .set_on_complete(on_complete)
+        .set_on_cancel(on_cancel)
+    )
+    stream.start(stream_callbacks)
+
+    # TODO: actually do something interesting here
+
     engine.terminate()
 
 

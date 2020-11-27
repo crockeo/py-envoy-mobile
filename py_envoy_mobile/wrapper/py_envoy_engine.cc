@@ -118,3 +118,7 @@ void Engine::put_thunk(const EngineCallback&& thunk) {
   this->thunks_.push_back(std::move(thunk));
   this->thunks_cv_.notify_one();
 }
+
+envoy_engine_t Engine::handle() {
+  return this->engine_;
+}

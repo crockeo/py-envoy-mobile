@@ -10,36 +10,34 @@
 
 struct Stream;
 
-
-using OnHeadersCallback = std::function<void (std::shared_ptr<Engine>, std::shared_ptr<Stream>, std::unique_ptr<Headers>)>;
-using OnDataCallback = std::function<void (std::shared_ptr<Engine>, std::shared_ptr<Stream>, std::unique_ptr<Data>)>;
-using OnErrorCallback = std::function<void (std::shared_ptr<Engine>, std::shared_ptr<Stream>, int error_code)>;
-using OnCompleteCallback = std::function<void (std::shared_ptr<Engine>, std::shared_ptr<Stream>)>;
-
+using OnHeadersCallback = std::function<void (Engine&, Stream&, std::unique_ptr<Headers>, bool)>;
+using OnHeadersLikeCallback = std::function<void (Engine&, Stream&, std::unique_ptr<Headers>)>;
+using OnDataCallback = std::function<void (Engine&, Stream&, std::unique_ptr<Data>, bool)>;
+using OnErrorCallback = std::function<void (Engine&, Stream&, int error_code)>;
+using OnCompleteCallback = std::function<void (Engine&, Stream&)>;
 
 struct StreamCallbacks {
-  StreamCallbacks(std::shared_ptr<Engine> engine, std::shared_ptr<Stream> stream);
+  StreamCallbacks(std::shared_ptr<Stream> stream);
 
   StreamCallbacks& set_on_headers(OnHeadersCallback on_headers);
   StreamCallbacks& set_on_data(OnDataCallback on_data);
-  StreamCallbacks& set_on_metadata(OnHeadersCallback on_metadata);
-  StreamCallbacks& set_on_trailers(OnHeadersCallback on_trailers);
+  StreamCallbacks& set_on_metadata(OnHeadersLikeCallback on_metadata);
+  StreamCallbacks& set_on_trailers(OnHeadersLikeCallback on_trailers);
   StreamCallbacks& set_on_error(OnErrorCallback on_error);
   StreamCallbacks& set_on_complete(OnCompleteCallback on_complete);
   StreamCallbacks& set_on_cancel(OnCompleteCallback on_cancel);
 
-  std::shared_ptr<Engine> engine;
-  std::shared_ptr<Stream> stream;
-
   std::optional<OnHeadersCallback> on_headers;
   std::optional<OnDataCallback> on_data;
-  std::optional<OnHeadersCallback> on_metadata;
-  std::optional<OnHeadersCallback> on_trailers;
+  std::optional<OnHeadersLikeCallback> on_metadata;
+  std::optional<OnHeadersLikeCallback> on_trailers;
   std::optional<OnErrorCallback> on_error;
   std::optional<OnCompleteCallback> on_complete;
   std::optional<OnCompleteCallback> on_cancel;
-};
 
+  envoy_http_callbacks callbacks;
+  std::shared_ptr<Stream> stream;
+};
 
 struct Stream {
   Stream(std::shared_ptr<Engine> engine);
@@ -49,14 +47,17 @@ struct Stream {
   Stream(const Stream&&) = delete;
   Stream& operator=(const Stream&&) = delete;
 
-  void start(std::unique_ptr<StreamCallbacks> callbacks);
-  void send_headers(std::unique_ptr<Headers> headers, bool end_stream);
-  void send_data(std::unique_ptr<Data> data, bool end_stream);
-  void send_metadata(std::unique_ptr<Headers> metadata);
-  void send_trailers(std::unique_ptr<Headers> trailers);
+  void start(const StreamCallbacks& callbacks);
+  void send_headers(const Headers& headers, bool end_stream);
+  void send_data(const Data& data, bool end_stream);
+  void send_metadata(const Headers& metadata);
+  void send_trailers(const Headers& trailers);
   void reset();
   void close();
 
-  std::shared_ptr<Engine> engine;
-  envoy_stream_t stream;
+  std::shared_ptr<Engine> parent() const;
+
+private:
+  std::shared_ptr<Engine> parent_;
+  envoy_stream_t stream_;
 };

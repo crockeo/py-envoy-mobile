@@ -1,17 +1,24 @@
 #include "py_envoy_headers.h"
 
 
+Headers::Headers() {}
+
+Headers::Headers(const envoy_headers headers) {
+  for (int i = 0; i < headers.length; i++) {
+    // TODO(chillen): this is unsafe, find a better way to do this
+    std::string key((const char *)(headers.headers[i].key.bytes));
+    std::string value((const char *)(headers.headers[i].value.bytes));
+
+    this->headers[key] = value;
+  }
+}
+
 Headers& Headers::add(const std::string& name, const std::string& value) {
   this->headers[name] = value;
   return *this;
 }
 
-Headers Headers::from_envoy_headers(envoy_headers headers) {
-  // TODO: implement it in this direction
-  return Headers();
-}
-
-envoy_headers Headers::to_envoy_headers() const {
+envoy_headers Headers::as_envoy_headers() const {
   envoy_headers headers;
 
   headers.length = this->headers.size();

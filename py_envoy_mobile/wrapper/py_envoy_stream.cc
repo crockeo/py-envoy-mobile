@@ -1,66 +1,193 @@
 #include "py_envoy_stream.h"
 
+#include <exception>
 
-StreamCallbacks::StreamCallbacks(std::shared_ptr<Engine> engine, std::shared_ptr<Stream> stream) {
-  this->engine = engine;
+#include "library/common/main_interface.h"
+
+
+// TODO: I'm sure that this whole section could be cleaned up by C++ templates, but I haven't done
+// templating in far too long.
+static void *py_dispatch_on_headers(envoy_headers headers, bool end_stream, void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_headers.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      auto py_headers = std::make_unique<Headers>(headers);
+      callbacks->on_headers.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(py_headers), end_stream);
+    });
+  }
+  return context;
+}
+
+static void *py_dispatch_on_data(envoy_data data, bool end_stream, void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_data.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      auto py_data = std::make_unique<Data>(data);
+      callbacks->on_data.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(py_data), end_stream);
+    });
+  }
+  return context;
+}
+
+static void *py_dispatch_on_metadata(envoy_headers headers, void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_metadata.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      auto py_headers = std::make_unique<Headers>(headers);
+      callbacks->on_metadata.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(py_headers));
+    });
+  }
+  return context;
+}
+
+static void *py_dispatch_on_trailers(envoy_headers headers, void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_trailers.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      auto py_headers = std::make_unique<Headers>(headers);
+      callbacks->on_trailers.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(py_headers));
+    });
+  }
+  return context;
+}
+
+static void *py_dispatch_on_error(envoy_error error, void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_error.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      // TODO: implement error type and pass it through here
+      // auto py_headers = std::make_unique<Headers>(headers);
+      // callbacks->on_error.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(ph_headers), end_stream);
+    });
+  }
+  return context;
+}
+
+static void *py_dispatch_on_complete(void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_complete.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      callbacks->on_complete.value()(engine, *callbacks->stream);
+    });
+  }
+  return context;
+}
+
+static void *py_dispatch_on_cancel(void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_cancel.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      callbacks->on_cancel.value()(engine, *callbacks->stream);
+    });
+  }
+  return context;
+}
+
+
+StreamCallbacks::StreamCallbacks(std::shared_ptr<Stream> stream) {
   this->stream = stream;
+  this->callbacks = envoy_http_callbacks {
+    .on_headers = &py_dispatch_on_headers,
+    .on_data = &py_dispatch_on_data,
+    .on_metadata = &py_dispatch_on_metadata,
+    .on_trailers = &py_dispatch_on_trailers,
+    .on_error = &py_dispatch_on_error,
+    .on_complete = &py_dispatch_on_complete,
+    .on_cancel = &py_dispatch_on_cancel,
+  };
 }
 
 StreamCallbacks& StreamCallbacks::set_on_headers(OnHeadersCallback on_headers) {
+  this->on_headers = on_headers;
   return *this;
 }
 
 StreamCallbacks& StreamCallbacks::set_on_data(OnDataCallback on_data) {
+  this->on_data = on_data;
   return *this;
 }
 
-StreamCallbacks& StreamCallbacks::set_on_metadata(OnHeadersCallback on_metadata) {
+StreamCallbacks& StreamCallbacks::set_on_metadata(OnHeadersLikeCallback on_metadata) {
+  this->on_metadata = on_metadata;
   return *this;
 }
 
-StreamCallbacks& StreamCallbacks::set_on_trailers(OnHeadersCallback on_trailers) {
+StreamCallbacks& StreamCallbacks::set_on_trailers(OnHeadersLikeCallback on_trailers) {
+  this->on_trailers = on_trailers;
   return *this;
 }
 
 StreamCallbacks& StreamCallbacks::set_on_error(OnErrorCallback on_error) {
+  this->on_error = on_error;
   return *this;
 }
 
 StreamCallbacks& StreamCallbacks::set_on_complete(OnCompleteCallback on_complete) {
+  this->on_complete = on_complete;
   return *this;
 }
 
 StreamCallbacks& StreamCallbacks::set_on_cancel(OnCompleteCallback on_cancel) {
+  this->on_cancel = on_cancel;
   return *this;
 }
 
 
 Stream::Stream(std::shared_ptr<Engine> engine) {
-  this->engine = engine;
-  // TODO: init stream
+  this->parent_ = engine;
+  this->stream_ = init_stream(this->parent_->handle());
 }
 
 Stream::~Stream() {
-  // TODO: close stream
+  auto status = reset_stream(this->stream_);
+  if (status == ENVOY_FAILURE) {
+    // TODO we can't throw here
+  }
 }
 
-void Stream::start(std::unique_ptr<StreamCallbacks> callbacks) {
+void Stream::start(const StreamCallbacks& callbacks) {
+  auto status = start_stream(this->stream_, callbacks.callbacks);
+  if (status == ENVOY_FAILURE) {
+    throw std::runtime_error("failed to start stream");
+  }
 }
 
-void Stream::send_headers(std::unique_ptr<Headers> headers, bool end_stream) {
+void Stream::send_headers(const Headers& headers, bool end_stream) {
+  auto status = ::send_headers(this->stream_, headers.as_envoy_headers(), end_stream);
+  if (status == ENVOY_FAILURE) {
+    throw std::runtime_error("failed to send headers");
+  }
 }
 
-void Stream::send_data(std::unique_ptr<Data> data, bool end_stream) {
+void Stream::send_data(const Data& data, bool end_stream) {
+  auto status = ::send_data(this->stream_, data.as_envoy_data(), end_stream);
+  if (status == ENVOY_FAILURE) {
+    throw std::runtime_error("failed to send data");
+  }
 }
 
-void Stream::send_metadata(std::unique_ptr<Headers> metadata) {
+void Stream::send_metadata(const Headers& metadata) {
+  auto status = ::send_metadata(this->stream_, metadata.as_envoy_headers());
+  if (status == ENVOY_FAILURE) {
+    throw std::runtime_error("failed to send data");
+  }
 }
 
-void Stream::send_trailers(std::unique_ptr<Headers> trailers) {
+void Stream::send_trailers(const Headers& trailers) {
+  auto status = ::send_trailers(this->stream_, trailers.as_envoy_headers());
+  if (status == ENVOY_FAILURE) {
+    throw std::runtime_error("failed to send data");
+  }
 }
 
 void Stream::reset() {
+  // TODO: maybe not implement this because it's automatically reset when it goes out of scope?
+  // auto status = ::send_headers(this->stream_, headers.as_envoy_data(), end_stream);
+  // if (status == ENVOY_FAILURE) {
+  //   throw std::runtime_error("failed to send data");
+  // }
 }
 
 void Stream::close() {
+  this->send_data(Data(""), true);
 }
