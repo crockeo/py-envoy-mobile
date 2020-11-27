@@ -23,3 +23,10 @@ pybind_extension(
         "@envoy_mobile//library/common:envoy_main_interface_lib",
     ],
 )
+
+
+sh_binary(
+    name = "debug",
+    srcs = ["run_debug.sh"],
+    data = [":py_envoy_mobile"],
+)

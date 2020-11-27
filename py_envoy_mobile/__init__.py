@@ -1,3 +1,4 @@
+import faulthandler
 from typing import Any
 
 from py_envoy_mobile import wrapper  # type: ignore
@@ -83,14 +84,15 @@ def on_engine_running(engine: wrapper.Engine):
     stream.start(stream_callbacks)
     stream.send_headers(
         wrapper.Headers()
-        .set_header(":authority", "google.com")
-        .set_header(":method", "GET")
-        .set_header(":path", "/")
-        .set_header(":scheme", "https")
+        .add(":authority", "google.com")
+        .add(":method", "GET")
+        .add(":path", "/")
+        .add(":scheme", "https"),
+        True,
     )
-    stream.close()
 
-    # TODO: actually do something interesting here
+    # TODO: we cause a segfault here, because we try to access the Stream and StreamCallbacks after
+    # they're been deallocated when this function is unscoped.
 
     engine.terminate()
 
@@ -102,6 +104,8 @@ def on_exit(engine: wrapper.Engine):
 
 
 if __name__ == "__main__":
+    faulthandler.enable()
+
     engine = wrapper.Engine()
     callbacks = wrapper.EngineCallbacks(engine).set_on_engine_running(on_engine_running).set_on_exit(on_exit)
 

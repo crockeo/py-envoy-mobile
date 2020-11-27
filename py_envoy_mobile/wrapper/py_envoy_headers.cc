@@ -33,6 +33,7 @@ envoy_headers Headers::as_envoy_headers() const {
       .key = key,
       .value = value,
     };
+    i++;
   }
 
   return headers;

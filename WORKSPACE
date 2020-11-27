@@ -62,3 +62,10 @@ envoy_mobile_dependencies()
 
 load("@envoy_mobile//bazel:envoy_mobile_toolchains.bzl", "envoy_mobile_toolchains")
 envoy_mobile_toolchains()
+
+# googletest
+git_repository(
+    name = "gtest",
+    remote = "git@github.com:google/googletest",
+    tag = "release-1.10.0",
+)
