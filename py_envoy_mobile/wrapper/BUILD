@@ -1,5 +1,3 @@
-load("@pybind11_bazel//:build_defs.bzl", "pybind_library")
-
 cc_library(
     name = "lib",
     visibility = ["//visibility:public"],

@@ -84,18 +84,17 @@ static void *py_dispatch_on_cancel(void *context) {
 }
 
 
-StreamCallbacks::StreamCallbacks(std::shared_ptr<Stream> stream) {
-  this->stream = stream;
-  this->callbacks = envoy_http_callbacks {
-    .on_headers = &py_dispatch_on_headers,
-    .on_data = &py_dispatch_on_data,
-    .on_metadata = &py_dispatch_on_metadata,
-    .on_trailers = &py_dispatch_on_trailers,
-    .on_error = &py_dispatch_on_error,
-    .on_complete = &py_dispatch_on_complete,
-    .on_cancel = &py_dispatch_on_cancel,
-  };
-}
+StreamCallbacks::StreamCallbacks(std::shared_ptr<Stream> stream)
+  : stream(stream),
+    callbacks {
+      .on_headers = &py_dispatch_on_headers,
+      .on_data = &py_dispatch_on_data,
+      .on_metadata = &py_dispatch_on_metadata,
+      .on_trailers = &py_dispatch_on_trailers,
+      .on_error = &py_dispatch_on_error,
+      .on_complete = &py_dispatch_on_complete,
+      .on_cancel = &py_dispatch_on_cancel,
+    } {}
 
 StreamCallbacks& StreamCallbacks::set_on_headers(OnHeadersCallback on_headers) {
   this->on_headers = on_headers;
@@ -190,4 +189,8 @@ void Stream::reset() {
 
 void Stream::close() {
   this->send_data(Data(""), true);
+}
+
+std::shared_ptr<Engine> Stream::parent() const {
+  return this->parent_;
 }

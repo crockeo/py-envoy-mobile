@@ -8,7 +8,7 @@
 #include "py_envoy_headers.h"
 
 
-struct Stream;
+class Stream;
 
 using OnHeadersCallback = std::function<void (Engine&, Stream&, std::unique_ptr<Headers>, bool)>;
 using OnHeadersLikeCallback = std::function<void (Engine&, Stream&, std::unique_ptr<Headers>)>;
@@ -35,11 +35,12 @@ struct StreamCallbacks {
   std::optional<OnCompleteCallback> on_complete;
   std::optional<OnCompleteCallback> on_cancel;
 
-  envoy_http_callbacks callbacks;
   std::shared_ptr<Stream> stream;
+  envoy_http_callbacks callbacks;
 };
 
-struct Stream {
+class Stream {
+public:
   Stream(std::shared_ptr<Engine> engine);
   ~Stream();
 
