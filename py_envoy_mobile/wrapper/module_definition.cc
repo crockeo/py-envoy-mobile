@@ -24,7 +24,8 @@ PYBIND11_MODULE(wrapper, m) {
   m.def("get_platform_filter_template", &get_platform_filter_template);
 
   py::class_<Data>(m, "Data")
-    .def(py::init<const std::string&>());
+    .def(py::init<const std::string&>())
+    .def("as_str", &Data::as_str);
 
   py::class_<EngineCallbacks>(m, "EngineCallbacks")
     .def(py::init<std::shared_ptr<Engine>>())

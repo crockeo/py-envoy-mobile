@@ -15,6 +15,16 @@ Data::Data(const envoy_data data) {
   memcpy(&this->data[0], data.bytes, data.length);
 }
 
+std::string Data::as_str() {
+  char *cstr = (char *)safe_malloc(this->data.size() + 1);
+  memcpy(cstr, &this->data[0], this->data.size());
+  cstr[this->data.size()] = '\0';
+
+  std::string ret(cstr);
+  free(cstr);
+  return ret;
+}
+
 envoy_data Data::as_envoy_data() const {
   return copy_envoy_data(this->data.size(), &this->data[0]);
 }

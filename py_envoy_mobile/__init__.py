@@ -46,11 +46,12 @@ def on_engine_running(engine: wrapper.Engine):
     stream = wrapper.Stream(engine)
     done = gevent.event.Event()
 
-    def on_headers(engine: wrapper.Engine, stream: wrapper.Stream, data: wrapper.Data, closed: bool):
+    def on_headers(engine: wrapper.Engine, stream: wrapper.Stream, headers: wrapper.Headers, closed: bool):
         print("on headers", closed)
 
-    def on_data(engine: wrapper.Engine, stream: wrapper.Stream, headers: wrapper.Headers, closed: bool):
+    def on_data(engine: wrapper.Engine, stream: wrapper.Stream, data: wrapper.Data, closed: bool):
         print("on data", closed)
+        print(data.as_str())
 
     def on_metadata(engine: wrapper.Engine, stream: wrapper.Stream, metadata: wrapper.Headers):
         print("on metadata")
@@ -83,7 +84,7 @@ def on_engine_running(engine: wrapper.Engine):
     stream.start(stream_callbacks)
     stream.send_headers(
         wrapper.Headers()
-        .add(":authority", "google.com")
+        .add(":authority", "www.google.com")
         .add(":method", "GET")
         .add(":path", "/")
         .add(":scheme", "https"),
