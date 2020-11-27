@@ -57,26 +57,14 @@ Engine::~Engine() {
   }
 }
 
+bool Engine::running() const {
+  return !this->terminated_;
+}
+
 void Engine::run(const EngineCallbacks& callbacks, const std::string& config, const std::string& log_level) {
   envoy_status_t status = run_engine(this->engine_, callbacks.callbacks, config.c_str(), log_level.c_str());
   if (status == ENVOY_FAILURE) {
     throw std::runtime_error("failed to run engine");
-  }
-
-  // busy wait for thunks
-  while (!this->terminated_) {
-    std::optional<EngineCallback> thunk;
-    {
-      std::unique_lock<std::mutex> lock(this->thunks_mtx_);
-      this->thunks_cv_.wait(lock, [this]{ return this->thunks_.size() > 0; });
-
-      thunk = this->thunks_.back();
-      this->thunks_.pop_back();
-    }
-
-    if (thunk.has_value()) {
-      thunk.value()(*this);
-    }
   }
 }
 
@@ -111,6 +99,17 @@ void Engine::gauge_sub(const std::string& name, uint64_t amount) {
   if (status == ENVOY_FAILURE) {
     throw std::runtime_error("failed to subtract from gauge");
   }
+}
+
+std::optional<EngineCallback> Engine::get_thunk() {
+  std::unique_lock<std::mutex> lock(this->thunks_mtx_);
+  if (this->thunks_.size() == 0) {
+    return std::optional<EngineCallback>();
+  }
+
+  auto thunk = this->thunks_.front();
+  this->thunks_.pop_front();
+  return std::optional(thunk);
 }
 
 void Engine::put_thunk(const EngineCallback&& thunk) {

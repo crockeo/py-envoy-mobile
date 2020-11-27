@@ -1,5 +1,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/functional.h"
+#include "pybind11/stl.h"
 namespace py = pybind11;
 
 #include "library/common/main_interface.h"
@@ -32,13 +33,15 @@ PYBIND11_MODULE(wrapper, m) {
 
   py::class_<Engine, std::shared_ptr<Engine>>(m, "Engine")
     .def(py::init<>())
+    .def("running", &Engine::running)
     .def("run", &Engine::run)
     .def("terminate", &Engine::terminate)
     .def("terminate", &Engine::terminate)
     .def("record_counter", &Engine::record_counter)
     .def("gauge_set", &Engine::gauge_set)
     .def("gauge_add", &Engine::gauge_add)
-    .def("gauge_sub", &Engine::gauge_sub);
+    .def("gauge_sub", &Engine::gauge_sub)
+    .def("get_thunk", &Engine::get_thunk);
 
   py::class_<Headers>(m, "Headers")
     .def(py::init<>())

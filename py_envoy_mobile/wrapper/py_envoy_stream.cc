@@ -1,69 +1,100 @@
 #include "py_envoy_stream.h"
 
 #include <exception>
+#include <iostream>
 
 #include "library/common/main_interface.h"
+
+// TODO(SERIOUS!!!): there's a problem in this section, where if the StreamCallbacks, Stream, and/or
+// Engine lose scope before the callbacks finish processing, you'll get a context variable that
+// points to a deallocated StreamCallbacks.
+//
+// this NEEDS to be fixed
 
 
 // TODO: I'm sure that this whole section could be cleaned up by C++ templates, but I haven't done
 // templating in far too long.
 static void *py_dispatch_on_headers(envoy_headers headers, bool end_stream, void *context) {
+  if (context == nullptr) {
+    return context;
+  }
+
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  Headers py_headers(headers);
   if (callbacks->on_headers.has_value()) {
     callbacks->stream->parent()->put_thunk([=](Engine& engine) {
-      auto py_headers = std::make_unique<Headers>(headers);
-      callbacks->on_headers.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(py_headers), end_stream);
+      callbacks->on_headers.value()(*callbacks->stream->parent(), *callbacks->stream, py_headers, end_stream);
     });
   }
   return context;
 }
 
 static void *py_dispatch_on_data(envoy_data data, bool end_stream, void *context) {
+  if (context == nullptr) {
+    return context;
+  }
+
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  Data py_data(data);
   if (callbacks->on_data.has_value()) {
     callbacks->stream->parent()->put_thunk([=](Engine& engine) {
-      auto py_data = std::make_unique<Data>(data);
-      callbacks->on_data.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(py_data), end_stream);
+      callbacks->on_data.value()(*callbacks->stream->parent(), *callbacks->stream, py_data, end_stream);
     });
   }
   return context;
 }
 
 static void *py_dispatch_on_metadata(envoy_headers headers, void *context) {
+  if (context == nullptr) {
+    return context;
+  }
+
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  Headers py_headers(headers);
   if (callbacks->on_metadata.has_value()) {
     callbacks->stream->parent()->put_thunk([=](Engine& engine) {
-      auto py_headers = std::make_unique<Headers>(headers);
-      callbacks->on_metadata.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(py_headers));
+      callbacks->on_metadata.value()(*callbacks->stream->parent(), *callbacks->stream, py_headers);
     });
   }
   return context;
 }
 
 static void *py_dispatch_on_trailers(envoy_headers headers, void *context) {
+  if (context == nullptr) {
+    return context;
+  }
+
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  Headers py_headers(headers);
   if (callbacks->on_trailers.has_value()) {
     callbacks->stream->parent()->put_thunk([=](Engine& engine) {
-      auto py_headers = std::make_unique<Headers>(headers);
-      callbacks->on_trailers.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(py_headers));
+      callbacks->on_trailers.value()(*callbacks->stream->parent(), *callbacks->stream, py_headers);
     });
   }
   return context;
 }
 
 static void *py_dispatch_on_error(envoy_error error, void *context) {
+  if (context == nullptr) {
+    return context;
+  }
+
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
   if (callbacks->on_error.has_value()) {
     callbacks->stream->parent()->put_thunk([=](Engine& engine) {
       // TODO: implement error type and pass it through here
       // auto py_headers = std::make_unique<Headers>(headers);
-      // callbacks->on_error.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(ph_headers), end_stream);
+      // callbacks->on_error.value()(*callbacks->stream->parent(), *callbacks->stream, ph_headers, end_stream);
     });
   }
   return context;
 }
 
 static void *py_dispatch_on_complete(void *context) {
+  if (context == nullptr) {
+    return context;
+  }
+
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
   if (callbacks->on_complete.has_value()) {
     callbacks->stream->parent()->put_thunk([=](Engine& engine) {
@@ -74,6 +105,10 @@ static void *py_dispatch_on_complete(void *context) {
 }
 
 static void *py_dispatch_on_cancel(void *context) {
+  if (context == nullptr) {
+    return context;
+  }
+
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
   if (callbacks->on_cancel.has_value()) {
     callbacks->stream->parent()->put_thunk([=](Engine& engine) {
@@ -94,7 +129,12 @@ StreamCallbacks::StreamCallbacks(std::shared_ptr<Stream> stream)
       .on_error = &py_dispatch_on_error,
       .on_complete = &py_dispatch_on_complete,
       .on_cancel = &py_dispatch_on_cancel,
+      .context = this,
     } {}
+
+StreamCallbacks::~StreamCallbacks() {
+  this->callbacks.context = nullptr;
+}
 
 StreamCallbacks& StreamCallbacks::set_on_headers(OnHeadersCallback on_headers) {
   this->on_headers = on_headers;

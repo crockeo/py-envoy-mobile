@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <list>
+#include <optional>
 #include <string>
 #include <thread>
 
@@ -44,6 +45,8 @@ class Engine {
   Engine(const Engine&&) = delete;
   Engine& operator=(const Engine&&) = delete;
 
+  bool running() const;
+
   void run(const EngineCallbacks& callbacks, const std::string& config, const std::string& log_level);
   void terminate();
 
@@ -51,6 +54,8 @@ class Engine {
   void gauge_set(const std::string& name, uint64_t value);
   void gauge_add(const std::string& name, uint64_t amount);
   void gauge_sub(const std::string& name, uint64_t amount);
+
+  std::optional<EngineCallback> get_thunk();
 
   void put_thunk(const std::function<void (Engine&)>&& thunk);
 

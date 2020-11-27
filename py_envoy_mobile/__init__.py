@@ -1,6 +1,8 @@
 import faulthandler
 from typing import Any
 
+import gevent.event
+
 from py_envoy_mobile import wrapper  # type: ignore
 
 
@@ -38,39 +40,36 @@ class EnvoyConfig:
         return template
 
 
-def on_headers(engine: wrapper.Engine, stream: wrapper.Stream, data: wrapper.Data, closed: bool):
-    print("on headers")
-
-
-def on_data(engine: wrapper.Engine, stream: wrapper.Stream, headers: wrapper.Headers, closed: bool):
-    print("on data")
-
-
-def on_metadata(engine: wrapper.Engine, stream: wrapper.Stream, metadata: wrapper.Headers):
-    print("on metadata")
-
-
-def on_trailers(engine: wrapper.Engine, stream: wrapper.Stream, trailers: wrapper.Headers):
-    print("on trailers")
-
-
-# TODO: enable this once we have errors coming up
-# def on_error():
-#     pass
-
-
-def on_complete(engine: wrapper.Engine, stream: wrapper.Stream):
-    print("on complete")
-
-
-def on_cancel(engine: wrapper.Engine, stream: wrapper.Stream):
-    print("on cancel")
-
-
 def on_engine_running(engine: wrapper.Engine):
     print("on_engine_running")
 
     stream = wrapper.Stream(engine)
+    done = gevent.event.Event()
+
+    def on_headers(engine: wrapper.Engine, stream: wrapper.Stream, data: wrapper.Data, closed: bool):
+        print("on headers", closed)
+
+    def on_data(engine: wrapper.Engine, stream: wrapper.Stream, headers: wrapper.Headers, closed: bool):
+        print("on data", closed)
+
+    def on_metadata(engine: wrapper.Engine, stream: wrapper.Stream, metadata: wrapper.Headers):
+        print("on metadata")
+
+    def on_trailers(engine: wrapper.Engine, stream: wrapper.Stream, trailers: wrapper.Headers):
+        print("on trailers")
+
+    def on_error(engine: wrapper.Engine, code: int):
+        print("on error")
+        done.set()
+
+    def on_complete(engine: wrapper.Engine, stream: wrapper.Stream):
+        print("on complete")
+        done.set()
+
+    def on_cancel(engine: wrapper.Engine, stream: wrapper.Stream):
+        print("on cancel")
+        done.set()
+
     stream_callbacks = (
         wrapper.StreamCallbacks(stream)
         .set_on_headers(on_headers)
@@ -91,9 +90,7 @@ def on_engine_running(engine: wrapper.Engine):
         True,
     )
 
-    # TODO: we cause a segfault here, because we try to access the Stream and StreamCallbacks after
-    # they're been deallocated when this function is unscoped.
-
+    done.wait()
     engine.terminate()
 
 
@@ -112,3 +109,13 @@ if __name__ == "__main__":
     # note: this implicitly waits, maybe change that in the future to put the control into the
     # application layer :)
     engine.run(callbacks, EnvoyConfig().build(), "info")
+    try:
+        # TODO: come up with a better way to stop this thread than Ctrl+C
+        while engine.running():
+            gevent.sleep(0.05)  # TODO: come up with a better way to not hog CPU
+            thunk = engine.get_thunk()
+            if thunk is None:
+                continue
+            gevent.spawn(thunk, engine)
+    except KeyboardInterrupt:
+        engine.terminate()

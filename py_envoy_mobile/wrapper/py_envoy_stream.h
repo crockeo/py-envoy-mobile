@@ -10,14 +10,18 @@
 
 class Stream;
 
-using OnHeadersCallback = std::function<void (Engine&, Stream&, std::unique_ptr<Headers>, bool)>;
-using OnHeadersLikeCallback = std::function<void (Engine&, Stream&, std::unique_ptr<Headers>)>;
-using OnDataCallback = std::function<void (Engine&, Stream&, std::unique_ptr<Data>, bool)>;
+using OnHeadersCallback = std::function<void (Engine&, Stream&, Headers, bool)>;
+using OnHeadersLikeCallback = std::function<void (Engine&, Stream&, Headers)>;
+using OnDataCallback = std::function<void (Engine&, Stream&, Data, bool)>;
 using OnErrorCallback = std::function<void (Engine&, Stream&, int error_code)>;
 using OnCompleteCallback = std::function<void (Engine&, Stream&)>;
 
 struct StreamCallbacks {
   StreamCallbacks(std::shared_ptr<Stream> stream);
+  ~StreamCallbacks();
+
+  StreamCallbacks(const StreamCallbacks&&) = delete;
+  StreamCallbacks& operator=(const StreamCallbacks&&) = delete;
 
   StreamCallbacks& set_on_headers(OnHeadersCallback on_headers);
   StreamCallbacks& set_on_data(OnDataCallback on_data);
