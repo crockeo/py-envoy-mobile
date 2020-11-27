@@ -51,6 +51,12 @@ Engine::Engine() {
   this->terminated_ = false;
 }
 
+Engine::~Engine() {
+  if (!this->terminated_) {
+    this->terminate();
+  }
+}
+
 void Engine::run(const EngineCallbacks& callbacks, const std::string& config, const std::string& log_level) {
   envoy_status_t status = run_engine(this->engine_, callbacks.callbacks, config.c_str(), log_level.c_str());
   if (status == ENVOY_FAILURE) {

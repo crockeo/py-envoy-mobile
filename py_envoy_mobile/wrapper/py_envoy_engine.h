@@ -39,6 +39,10 @@ struct EngineCallbacks {
 class Engine {
  public:
   Engine();
+  ~Engine();
+
+  Engine(const Engine&&) = delete;
+  Engine& operator=(const Engine&&) = delete;
 
   void run(const EngineCallbacks& callbacks, const std::string& config, const std::string& log_level);
   void terminate();
