@@ -79,7 +79,16 @@ def on_engine_running(engine: wrapper.Engine):
         .set_on_complete(on_complete)
         .set_on_cancel(on_cancel)
     )
+
     stream.start(stream_callbacks)
+    stream.send_headers(
+        wrapper.Headers()
+        .set_header(":authority", "google.com")
+        .set_header(":method", "GET")
+        .set_header(":path", "/")
+        .set_header(":scheme", "https")
+    )
+    stream.close()
 
     # TODO: actually do something interesting here
 
