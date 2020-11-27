@@ -1,28 +1,17 @@
 #pragma once
 
-#define PY_SSIZE_T_CLEAN
-#include "Python.h"
+#include <string>
+#include <vector>
+
 #include "library/common/types/c_types.h"
 
 
-struct PyEnvoyDataObject {
-  PyObject_HEAD
-  envoy_data data;
-};
+struct Data {
+  Data(const std::string& str);
+  Data(const envoy_data data);
 
-PyObject *PyEnvoyData_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
-int PyEnvoyData_init(PyEnvoyDataObject *self, PyObject *args, PyObject *kwargs);
-void PyEnvoyData_dealloc(PyEnvoyDataObject *self);
+  // copies the contents of this struct into an envoy_data
+  envoy_data as_envoy_data() const;
 
-static PyTypeObject PyEnvoyDataType = {
-  PyVarObject_HEAD_INIT(nullptr, 0)
-
-  .tp_name = "c_types_wrapper.Data",
-  .tp_doc = "",
-  .tp_basicsize = sizeof(PyEnvoyDataObject),
-  .tp_itemsize = 0,
-  .tp_flags = Py_TPFLAGS_DEFAULT,
-  .tp_new = PyEnvoyData_new,
-  .tp_init = (initproc)PyEnvoyData_init,
-  .tp_dealloc = (destructor)PyEnvoyData_dealloc,
+  std::vector<uint8_t> data;
 };

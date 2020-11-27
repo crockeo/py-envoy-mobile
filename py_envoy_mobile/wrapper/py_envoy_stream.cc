@@ -1,125 +1,193 @@
 #include "py_envoy_stream.h"
 
+#include <exception>
+
 #include "library/common/main_interface.h"
-#include "py_envoy_data.h"
-#include "py_envoy_engine.h"
-#include "py_envoy_headers.h"
-#include "py_envoy_http_callbacks.h"
 
 
-PyObject *PyStreamObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
-  PyStreamObject *self;
-  self = (PyStreamObject *)type->tp_alloc(type, 0);
-  if (self != nullptr) {
-    self->stream = 0;
+// TODO: I'm sure that this whole section could be cleaned up by C++ templates, but I haven't done
+// templating in far too long.
+static void *py_dispatch_on_headers(envoy_headers headers, bool end_stream, void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_headers.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      auto py_headers = std::make_unique<Headers>(headers);
+      callbacks->on_headers.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(py_headers), end_stream);
+    });
   }
-  return (PyObject *)self;
+  return context;
 }
 
-int PyStreamObject_init(PyStreamObject *self, PyObject *args, PyObject *kwargs) {
-  char *kwlist[] = {"engine", nullptr};
-  PyEngineObject *engine;
-
-  if (
-      !PyArg_ParseTupleAndKeywords(
-         args,
-         kwargs,
-         "O",
-         kwlist,
-         &engine
-      )
-  ) {
-    return -1;
+static void *py_dispatch_on_data(envoy_data data, bool end_stream, void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_data.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      auto py_data = std::make_unique<Data>(data);
+      callbacks->on_data.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(py_data), end_stream);
+    });
   }
-
-  self->stream = init_stream(engine->engine);
-  return 0;
+  return context;
 }
 
-PyObject *PyStreamObject_start(PyStreamObject *self, PyObject *args) {
-  PyHttpCallbacksObject *callbacks;
-  if (!PyArg_ParseTuple(args, "O", &callbacks)) {
-    return nullptr;
+static void *py_dispatch_on_metadata(envoy_headers headers, void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_metadata.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      auto py_headers = std::make_unique<Headers>(headers);
+      callbacks->on_metadata.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(py_headers));
+    });
   }
-
-  envoy_status_t status = start_stream(self->stream, callbacks->http_callbacks);
-  if (status == kEnvoyFailure) {
-    PyErr_SetString(PyExc_RuntimeError, "failed to start stream");
-    return nullptr;
-  }
-
-  Py_INCREF(Py_None);
-  return Py_None;
+  return context;
 }
 
-PyObject *PyStreamObject_send_headers(PyStreamObject *self, PyObject *args) {
-  PyHeadersObject *headers;
-  bool close;
-  if (!PyArg_ParseTuple(args, "Op:send_headers", &headers, &close)) {
-    return nullptr;
+static void *py_dispatch_on_trailers(envoy_headers headers, void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_trailers.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      auto py_headers = std::make_unique<Headers>(headers);
+      callbacks->on_trailers.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(py_headers));
+    });
   }
-
-  envoy_status_t status = send_headers(self->stream, headers->headers, close);
-  if (status == kEnvoyFailure) {
-    PyErr_SetString(PyExc_RuntimeError, "failed to send headers");
-    return nullptr;
-  }
-
-  Py_INCREF(Py_None);
-  return Py_None;
+  return context;
 }
 
-PyObject *PyStreamObject_send_data(PyStreamObject *self, PyObject *args) {
-  PyEnvoyDataObject *data;
-  bool close;
-  if (!PyArg_ParseTuple(args, "Ob:send_data", &data, &close)) {
-    return nullptr;
+static void *py_dispatch_on_error(envoy_error error, void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_error.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      // TODO: implement error type and pass it through here
+      // auto py_headers = std::make_unique<Headers>(headers);
+      // callbacks->on_error.value()(*callbacks->stream->parent(), *callbacks->stream, std::move(ph_headers), end_stream);
+    });
   }
+  return context;
+}
 
-  envoy_status_t status = send_data(self->stream, data->data, close);
+static void *py_dispatch_on_complete(void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_complete.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      callbacks->on_complete.value()(engine, *callbacks->stream);
+    });
+  }
+  return context;
+}
+
+static void *py_dispatch_on_cancel(void *context) {
+  StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  if (callbacks->on_cancel.has_value()) {
+    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+      callbacks->on_cancel.value()(engine, *callbacks->stream);
+    });
+  }
+  return context;
+}
+
+
+StreamCallbacks::StreamCallbacks(std::shared_ptr<Stream> stream) {
+  this->stream = stream;
+  this->callbacks = envoy_http_callbacks {
+    .on_headers = &py_dispatch_on_headers,
+    .on_data = &py_dispatch_on_data,
+    .on_metadata = &py_dispatch_on_metadata,
+    .on_trailers = &py_dispatch_on_trailers,
+    .on_error = &py_dispatch_on_error,
+    .on_complete = &py_dispatch_on_complete,
+    .on_cancel = &py_dispatch_on_cancel,
+  };
+}
+
+StreamCallbacks& StreamCallbacks::set_on_headers(OnHeadersCallback on_headers) {
+  this->on_headers = on_headers;
+  return *this;
+}
+
+StreamCallbacks& StreamCallbacks::set_on_data(OnDataCallback on_data) {
+  this->on_data = on_data;
+  return *this;
+}
+
+StreamCallbacks& StreamCallbacks::set_on_metadata(OnHeadersLikeCallback on_metadata) {
+  this->on_metadata = on_metadata;
+  return *this;
+}
+
+StreamCallbacks& StreamCallbacks::set_on_trailers(OnHeadersLikeCallback on_trailers) {
+  this->on_trailers = on_trailers;
+  return *this;
+}
+
+StreamCallbacks& StreamCallbacks::set_on_error(OnErrorCallback on_error) {
+  this->on_error = on_error;
+  return *this;
+}
+
+StreamCallbacks& StreamCallbacks::set_on_complete(OnCompleteCallback on_complete) {
+  this->on_complete = on_complete;
+  return *this;
+}
+
+StreamCallbacks& StreamCallbacks::set_on_cancel(OnCompleteCallback on_cancel) {
+  this->on_cancel = on_cancel;
+  return *this;
+}
+
+
+Stream::Stream(std::shared_ptr<Engine> engine) {
+  this->parent_ = engine;
+  this->stream_ = init_stream(this->parent_->handle());
+}
+
+Stream::~Stream() {
+  auto status = reset_stream(this->stream_);
   if (status == ENVOY_FAILURE) {
-    PyErr_SetString(PyExc_RuntimeError, "failed to send data");
-    return nullptr;
+    // TODO we can't throw here
   }
-
-  Py_INCREF(Py_None);
-  return Py_None;
 }
 
-PyObject *PyStreamObject_send_metadata(PyStreamObject *self, PyObject *args) {
-  PyHeadersObject *headers;
-  if (!PyArg_ParseTuple(args, "O:send_metadata", &headers)) {
-    return nullptr;
-  }
-
-  envoy_status_t status = send_metadata(self->stream, headers->headers);
+void Stream::start(const StreamCallbacks& callbacks) {
+  auto status = start_stream(this->stream_, callbacks.callbacks);
   if (status == ENVOY_FAILURE) {
-    PyErr_SetString(PyExc_RuntimeError, "failed to send metadata");
-    return nullptr;
+    throw std::runtime_error("failed to start stream");
   }
-
-  Py_INCREF(Py_None);
-  return Py_None;
 }
 
-PyObject *PyStreamObject_send_trailers(PyStreamObject *self, PyObject *args) {
-  PyHeadersObject *headers;
-  if (!PyArg_ParseTuple(args, "O:send_trailers", &headers)) {
-    return nullptr;
-  }
-
-  envoy_status_t status = send_trailers(self->stream, headers->headers);
+void Stream::send_headers(const Headers& headers, bool end_stream) {
+  auto status = ::send_headers(this->stream_, headers.as_envoy_headers(), end_stream);
   if (status == ENVOY_FAILURE) {
-    PyErr_SetString(PyExc_RuntimeError, "failed to send trailers");
-    return nullptr;
+    throw std::runtime_error("failed to send headers");
   }
-
-  Py_INCREF(Py_None);
-  return Py_None;
 }
 
-PyObject *PyStreamObject_reset(PyStreamObject *self, PyObject *args) {
-  reset_stream(self->stream);
-  Py_INCREF(Py_None);
-  return Py_None;
+void Stream::send_data(const Data& data, bool end_stream) {
+  auto status = ::send_data(this->stream_, data.as_envoy_data(), end_stream);
+  if (status == ENVOY_FAILURE) {
+    throw std::runtime_error("failed to send data");
+  }
+}
+
+void Stream::send_metadata(const Headers& metadata) {
+  auto status = ::send_metadata(this->stream_, metadata.as_envoy_headers());
+  if (status == ENVOY_FAILURE) {
+    throw std::runtime_error("failed to send data");
+  }
+}
+
+void Stream::send_trailers(const Headers& trailers) {
+  auto status = ::send_trailers(this->stream_, trailers.as_envoy_headers());
+  if (status == ENVOY_FAILURE) {
+    throw std::runtime_error("failed to send data");
+  }
+}
+
+void Stream::reset() {
+  // TODO: maybe not implement this because it's automatically reset when it goes out of scope?
+  // auto status = ::send_headers(this->stream_, headers.as_envoy_data(), end_stream);
+  // if (status == ENVOY_FAILURE) {
+  //   throw std::runtime_error("failed to send data");
+  // }
+}
+
+void Stream::close() {
+  this->send_data(Data(""), true);
 }

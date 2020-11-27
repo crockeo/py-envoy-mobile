@@ -1,41 +1,20 @@
 #pragma once
 
-#include "py_envoy_data.h"
-#include "Python.h"
+#include <unordered_map>
+#include <string>
+
 #include "library/common/types/c_types.h"
 
 
-struct PyHeadersObject {
-  PyObject_HEAD
-  envoy_headers headers;
-  size_t capacity;
-};
+// Headers wraps the envoy_headers type. It prefers not to actually maintain an envoy_headers, but
+// rather translate between that representation and a safer, managed C++ representation.
+struct Headers {
+  Headers();
+  Headers(const envoy_headers headers);
 
-PyObject *PyHeadersObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
+  Headers& add(const std::string& name, const std::string& value);
 
-void PyHeadersObject_dealloc(PyHeadersObject *self);
+  envoy_headers as_envoy_headers() const;
 
-PyObject *PyHeadersObject_set_header(PyHeadersObject *self, PyObject *args);
-
-static PyMethodDef PyHeadersObject_methods[] = {
-  {
-    "set_header",
-    (PyCFunction)PyHeadersObject_set_header,
-    METH_VARARGS,
-    nullptr,
-  },
-  {nullptr},
-};
-
-static PyTypeObject PyHeadersType = {
-  PyVarObject_HEAD_INIT(nullptr, 0)
-
-  .tp_name = "c_types_wrapper.Headers",
-  .tp_doc = "",
-  .tp_basicsize = sizeof(PyHeadersObject),
-  .tp_itemsize = 0,
-  .tp_flags = Py_TPFLAGS_DEFAULT,
-  .tp_new = PyHeadersObject_new,
-  .tp_dealloc = (destructor)PyHeadersObject_dealloc,
-  .tp_methods = PyHeadersObject_methods,
+  std::unordered_map<std::string, std::string> headers;
 };

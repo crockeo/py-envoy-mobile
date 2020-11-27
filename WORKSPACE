@@ -1,12 +1,31 @@
 workspace(name = "py_envoy_mobile")
 
-# load("@bazel_tools//tools/build_defs/repo:.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
+
+# pybind11
+git_repository(
+    name = "pybind11_bazel",
+    remote = "git@github.com:pybind/pybind11_bazel",
+    commit = "26973c0ff320cb4b39e45bc3e4297b82bc3a6c09",
+)
+new_git_repository(
+    name = "pybind11",
+    build_file = "@pybind11_bazel//:pybind11.BUILD",
+    remote = "git@github.com:pybind/pybind11",
+    commit = "f1abf5d9159b805674197f6bc443592e631c9130",
+)
+load("@pybind11_bazel//:python_configure.bzl", "python_configure")
+python_configure(
+    name = "local_config_python",
+    python_version = "3",
+)
 
 local_repository(
     name = "envoy_mobile",
     path = "envoy-mobile",
 )
 
+# envoy + envoy-mobile
 load("@envoy_mobile//bazel:envoy_mobile_repositories.bzl", "envoy_mobile_repositories")
 envoy_mobile_repositories()
 
@@ -43,19 +62,3 @@ envoy_mobile_dependencies()
 
 load("@envoy_mobile//bazel:envoy_mobile_toolchains.bzl", "envoy_mobile_toolchains")
 envoy_mobile_toolchains()
-
-# providing access to Python.h
-# TODO: make this cross-platform
-new_local_repository(
-    name = "python",
-    path = "/usr/local/Cellar/python@3.9/3.9.0_1/Frameworks/Python.framework/Versions/3.9",
-    build_file_content = """
-cc_library(
-    name = "python-lib",
-    visibility = ["//visibility:public"],
-    srcs = ["lib/libpython3.9.dylib"],
-    hdrs = glob(["include/python3.9/**/*.h"]),
-    includes = ["include/python3.9"],
-)
-"""
-)

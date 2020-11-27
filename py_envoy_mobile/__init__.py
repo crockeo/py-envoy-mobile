@@ -1,4 +1,3 @@
-import time
 from typing import Any
 
 from py_envoy_mobile import wrapper  # type: ignore
@@ -6,8 +5,7 @@ from py_envoy_mobile import wrapper  # type: ignore
 
 class EnvoyConfig:
     def __init__(self):
-        self.template = wrapper.config_template()
-
+        self.template = wrapper.get_config_template()
         self.parameters = {
             "virtual_clusters": "[]",
             "dns_refresh_rate_seconds": 3,
@@ -39,38 +37,65 @@ class EnvoyConfig:
         return template
 
 
-def on_engine_running():
-    # TODO: figure out why this isn't being called, but on_exit is 🤔
-    with open("~/log.txt", "w") as f:
-        f.write("does this get run and just not piped to stdout?")
+def on_headers(engine: wrapper.Engine, stream: wrapper.Stream, data: wrapper.Data, closed: bool):
+    print("on headers")
+
+
+def on_data(engine: wrapper.Engine, stream: wrapper.Stream, headers: wrapper.Headers, closed: bool):
+    print("on data")
+
+
+def on_metadata(engine: wrapper.Engine, stream: wrapper.Stream, metadata: wrapper.Headers):
+    print("on metadata")
+
+
+def on_trailers(engine: wrapper.Engine, stream: wrapper.Stream, trailers: wrapper.Headers):
+    print("on trailers")
+
+
+# TODO: enable this once we have errors coming up
+# def on_error():
+#     pass
+
+
+def on_complete(engine: wrapper.Engine, stream: wrapper.Stream):
+    print("on complete")
+
+
+def on_cancel(engine: wrapper.Engine, stream: wrapper.Stream):
+    print("on cancel")
+
+
+def on_engine_running(engine: wrapper.Engine):
     print("on_engine_running")
 
-
-def on_exit():
-    print("on_exit")
-
-
-def main(config: str, debug_level: str):
-    engine = wrapper.Engine()
-
-    engine_callbacks = wrapper.EngineCallbacks().set_on_engine_running(on_engine_running).set_on_exit(on_exit)
-
-    # TODO: figure out why this causes an exception from envoy not being able to lock a mutex when we don't terminate
-    engine.run(engine_callbacks, config, debug_level)
-
     stream = wrapper.Stream(engine)
-    stream.start(wrapper.HttpCallbacks())
-
-    headers = (
-        wrapper.Headers().set_header("method", "POST").set_header("authority", "google.com").set_header("path", "/")
+    stream_callbacks = (
+        wrapper.StreamCallbacks(stream)
+        .set_on_headers(on_headers)
+        .set_on_data(on_data)
+        .set_on_metadata(on_metadata)
+        .set_on_trailers(on_trailers)
+        .set_on_complete(on_complete)
+        .set_on_cancel(on_cancel)
     )
-    stream.send_headers(headers, True)
+    stream.start(stream_callbacks)
+
+    # TODO: actually do something interesting here
 
     engine.terminate()
 
 
+# TODO: this is never actually called, because we call terminate() from within on_engine_running and
+# kill the Engine event loop
+def on_exit(engine: wrapper.Engine):
+    print("on_exit")
+
+
 if __name__ == "__main__":
-    main(
-        EnvoyConfig().build(),
-        "debug",
-    )
+    engine = wrapper.Engine()
+    callbacks = wrapper.EngineCallbacks(engine).set_on_engine_running(on_engine_running).set_on_exit(on_exit)
+
+    # note: this implicitly waits, maybe change that in the future to put the control into the
+    # application layer :)
+    engine.run(callbacks, EnvoyConfig().build(), "info")

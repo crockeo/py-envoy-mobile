@@ -1,74 +1,63 @@
 #pragma once
 
-#include "Python.h"
-#include "library/common/types/c_types.h"
+#include <memory>
+#include <optional>
+
+#include "py_envoy_data.h"
+#include "py_envoy_engine.h"
+#include "py_envoy_headers.h"
 
 
-struct PyStreamObject {
-  PyObject_HEAD
-  envoy_stream_t stream;
+struct Stream;
+
+using OnHeadersCallback = std::function<void (Engine&, Stream&, std::unique_ptr<Headers>, bool)>;
+using OnHeadersLikeCallback = std::function<void (Engine&, Stream&, std::unique_ptr<Headers>)>;
+using OnDataCallback = std::function<void (Engine&, Stream&, std::unique_ptr<Data>, bool)>;
+using OnErrorCallback = std::function<void (Engine&, Stream&, int error_code)>;
+using OnCompleteCallback = std::function<void (Engine&, Stream&)>;
+
+struct StreamCallbacks {
+  StreamCallbacks(std::shared_ptr<Stream> stream);
+
+  StreamCallbacks& set_on_headers(OnHeadersCallback on_headers);
+  StreamCallbacks& set_on_data(OnDataCallback on_data);
+  StreamCallbacks& set_on_metadata(OnHeadersLikeCallback on_metadata);
+  StreamCallbacks& set_on_trailers(OnHeadersLikeCallback on_trailers);
+  StreamCallbacks& set_on_error(OnErrorCallback on_error);
+  StreamCallbacks& set_on_complete(OnCompleteCallback on_complete);
+  StreamCallbacks& set_on_cancel(OnCompleteCallback on_cancel);
+
+  std::optional<OnHeadersCallback> on_headers;
+  std::optional<OnDataCallback> on_data;
+  std::optional<OnHeadersLikeCallback> on_metadata;
+  std::optional<OnHeadersLikeCallback> on_trailers;
+  std::optional<OnErrorCallback> on_error;
+  std::optional<OnCompleteCallback> on_complete;
+  std::optional<OnCompleteCallback> on_cancel;
+
+  envoy_http_callbacks callbacks;
+  std::shared_ptr<Stream> stream;
 };
 
-PyObject *PyStreamObject_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
-int PyStreamObject_init(PyStreamObject *self, PyObject *args, PyObject *kwargs);
+struct Stream {
+  Stream(std::shared_ptr<Engine> engine);
+  ~Stream();
 
-PyObject *PyStreamObject_start(PyStreamObject *self, PyObject *args);
-PyObject *PyStreamObject_send_headers(PyStreamObject *self, PyObject *args);
-PyObject *PyStreamObject_send_data(PyStreamObject *self, PyObject *args);
-PyObject *PyStreamObject_send_metadata(PyStreamObject *self, PyObject *args);
-PyObject *PyStreamObject_send_trailers(PyStreamObject *self, PyObject *args);
-PyObject *PyStreamObject_reset(PyStreamObject *self, PyObject *args);
-PyObject *PyStreamObject_close(PyStreamObject *self, PyObject *args);
+  // we want to disallow copying the stream, as it manages the envoy_stream_t internally
+  Stream(const Stream&&) = delete;
+  Stream& operator=(const Stream&&) = delete;
 
-static PyMethodDef PyStreamObject_methods[] = {
-  {
-    "start",
-    (PyCFunction)PyStreamObject_start,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "send_headers",
-    (PyCFunction)PyStreamObject_send_headers,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "send_data",
-    (PyCFunction)PyStreamObject_send_data,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "send_metadata",
-    (PyCFunction)PyStreamObject_send_metadata,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "send_trailers",
-    (PyCFunction)PyStreamObject_send_trailers,
-    METH_VARARGS,
-    nullptr,
-  },
-  {
-    "reset",
-    (PyCFunction)PyStreamObject_reset,
-    METH_VARARGS,
-    nullptr,
-  },
-  {nullptr},
-};
+  void start(const StreamCallbacks& callbacks);
+  void send_headers(const Headers& headers, bool end_stream);
+  void send_data(const Data& data, bool end_stream);
+  void send_metadata(const Headers& metadata);
+  void send_trailers(const Headers& trailers);
+  void reset();
+  void close();
 
-static PyTypeObject PyStreamType = {
-  PyVarObject_HEAD_INIT(nullptr, 0)
+  std::shared_ptr<Engine> parent() const;
 
-  .tp_name = "c_types_wrapper.Stream",
-  .tp_doc = "envoy-mobile stream handle",
-  .tp_basicsize = sizeof(PyStreamObject),
-  .tp_itemsize = 0,
-  .tp_flags = Py_TPFLAGS_DEFAULT,
-  .tp_new = PyStreamObject_new,
-  .tp_init = (initproc)PyStreamObject_init,
-  .tp_methods = PyStreamObject_methods,
+private:
+  std::shared_ptr<Engine> parent_;
+  envoy_stream_t stream_;
 };
