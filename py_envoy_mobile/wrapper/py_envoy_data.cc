@@ -15,7 +15,8 @@ Data::Data(const envoy_data data) {
   memcpy(&this->data[0], data.bytes, data.length);
 }
 
-std::string Data::as_str() {
+std::string Data::as_str() const {
+  // we ensure that the cstr is null-terminated so that we bound the str
   char *cstr = (char *)safe_malloc(this->data.size() + 1);
   memcpy(cstr, &this->data[0], this->data.size());
   cstr[this->data.size()] = '\0';

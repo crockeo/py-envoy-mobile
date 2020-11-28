@@ -18,14 +18,16 @@ const std::string get_platform_filter_template() {
   return std::string(platform_filter_template);
 }
 
-// TODO: figure out why we're failing at import time again
 PYBIND11_MODULE(wrapper, m) {
   m.def("get_config_template", &get_config_template);
   m.def("get_platform_filter_template", &get_platform_filter_template);
 
   py::class_<Data>(m, "Data")
     .def(py::init<const std::string&>())
-    .def("as_str", &Data::as_str);
+    .def("as_str", &Data::as_str)
+    .def("as_bytes", [](const Data& d) {
+      return py::bytes(d.as_str());
+    });
 
   py::class_<EngineCallbacks>(m, "EngineCallbacks")
     .def(py::init<std::shared_ptr<Engine>>())
@@ -46,6 +48,9 @@ PYBIND11_MODULE(wrapper, m) {
 
   py::class_<Headers>(m, "Headers")
     .def(py::init<>())
+    .def("__iter__", [](const Headers& h) {
+      return py::make_iterator(h.begin(), h.end());
+    }, py::keep_alive<0, 1>())
     .def("add", &Headers::add);
 
   py::class_<StreamCallbacks>(m, "StreamCallbacks")

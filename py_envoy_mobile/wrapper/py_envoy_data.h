@@ -10,7 +10,7 @@ struct Data {
   Data(const std::string& str);
   Data(const envoy_data data);
 
-  std::string as_str();
+  std::string as_str() const;
 
   // copies the contents of this struct into an envoy_data
   envoy_data as_envoy_data() const;

@@ -49,10 +49,15 @@ def on_engine_running(engine: wrapper.Engine):
 
     def on_headers(engine: wrapper.Engine, stream: wrapper.Stream, headers: wrapper.Headers, closed: bool):
         print("on headers", closed)
+        for key, value in headers:
+            print(key, value)
 
     def on_data(engine: wrapper.Engine, stream: wrapper.Stream, data: wrapper.Data, closed: bool):
         print("on data", closed)
-        print(data.as_str())
+        try:
+            print(data.as_str())
+        except UnicodeDecodeError:
+            print(data.as_bytes())
 
     def on_metadata(engine: wrapper.Engine, stream: wrapper.Stream, metadata: wrapper.Headers):
         print("on metadata")
@@ -98,8 +103,6 @@ def on_engine_running(engine: wrapper.Engine):
     engine.terminate()
 
 
-# TODO: this is never actually called, because we call terminate() from within on_engine_running and
-# kill the Engine event loop
 def on_exit(engine: wrapper.Engine):
     print("on_exit")
 
@@ -114,7 +117,6 @@ if __name__ == "__main__":
     # application layer :)
     engine.run(callbacks, EnvoyConfig().build(), "info")
     try:
-        # TODO: come up with a better way to stop this thread than Ctrl+C
         while engine.running():
             gevent.sleep(0.05)  # TODO: come up with a better way to not hog CPU
             thunk = engine.get_thunk()
