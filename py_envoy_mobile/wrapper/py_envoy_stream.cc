@@ -183,9 +183,11 @@ Stream::Stream(std::shared_ptr<Engine> engine) {
 }
 
 Stream::~Stream() {
-  auto status = reset_stream(this->stream_);
-  if (status == ENVOY_FAILURE) {
-    // TODO we can't throw here
+  try {
+    this->reset();
+  } catch (const std::runtime_error&&) {
+    // NOTE: we can't throw in a destructor, so we just make a best effort to reset the stream. if
+    // it fails then c'est la vie
   }
 }
 
@@ -213,23 +215,22 @@ void Stream::send_data(const Data& data, bool end_stream) {
 void Stream::send_metadata(const Headers& metadata) {
   auto status = ::send_metadata(this->stream_, metadata.as_envoy_headers());
   if (status == ENVOY_FAILURE) {
-    throw std::runtime_error("failed to send data");
+    throw std::runtime_error("failed to send metadata");
   }
 }
 
 void Stream::send_trailers(const Headers& trailers) {
   auto status = ::send_trailers(this->stream_, trailers.as_envoy_headers());
   if (status == ENVOY_FAILURE) {
-    throw std::runtime_error("failed to send data");
+    throw std::runtime_error("failed to send trailers");
   }
 }
 
 void Stream::reset() {
-  // TODO: maybe not implement this because it's automatically reset when it goes out of scope?
-  // auto status = ::send_headers(this->stream_, headers.as_envoy_data(), end_stream);
-  // if (status == ENVOY_FAILURE) {
-  //   throw std::runtime_error("failed to send data");
-  // }
+  auto status = ::send_headers(this->stream_, headers.as_envoy_data(), end_stream);
+  if (status == ENVOY_FAILURE) {
+    throw std::runtime_error("failed to reset stream");
+  }
 }
 
 void Stream::close() {
