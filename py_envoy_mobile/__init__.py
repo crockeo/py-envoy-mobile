@@ -49,6 +49,7 @@ def on_engine_running(engine: wrapper.Engine):
 
     def on_headers(engine: wrapper.Engine, stream: wrapper.Stream, headers: wrapper.Headers, closed: bool):
         print("on headers", closed)
+        print(headers[":status"])
         for key, value in headers:
             print(key, value)
 

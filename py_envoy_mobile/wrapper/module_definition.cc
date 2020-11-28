@@ -48,6 +48,7 @@ PYBIND11_MODULE(wrapper, m) {
 
   py::class_<Headers>(m, "Headers")
     .def(py::init<>())
+    .def("__getitem__", &Headers::operator[])
     .def("__iter__", [](const Headers& h) {
       return py::make_iterator(h.begin(), h.end());
     }, py::keep_alive<0, 1>())
