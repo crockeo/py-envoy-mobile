@@ -1,4 +1,5 @@
 import faulthandler
+import sys
 from typing import Any
 
 import gevent.event
@@ -19,7 +20,7 @@ class EnvoyConfig:
             "stats_flush_interval_seconds": 60,
             "app_id": "unspecified",
             "app_version": "unspecified",
-            "device_os": "computer",  # TODO: actually get OS info?
+            "device_os": sys.platform,
         }
 
     def set(self, param: str, value: Any) -> "EnvoyConfig":
