@@ -13,7 +13,7 @@ class Stream;
 using OnHeadersCallback = std::function<void (Engine&, Stream&, Headers, bool)>;
 using OnHeadersLikeCallback = std::function<void (Engine&, Stream&, Headers)>;
 using OnDataCallback = std::function<void (Engine&, Stream&, Data, bool)>;
-using OnErrorCallback = std::function<void (Engine&, Stream&, int error_code)>;
+using OnErrorCallback = std::function<void (Engine&, Stream&, int, Data, int)>;
 using OnCompleteCallback = std::function<void (Engine&, Stream&)>;
 
 struct StreamCallbacks {

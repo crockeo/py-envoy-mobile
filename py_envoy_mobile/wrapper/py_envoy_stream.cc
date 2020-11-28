@@ -80,11 +80,16 @@ static void *py_dispatch_on_error(envoy_error error, void *context) {
   }
 
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
+  int error_code = error.error_code;
+  Data error_message = Data(error.message);
+  int attempt_count = error.attempt_count;
   if (callbacks->on_error.has_value()) {
     callbacks->stream->parent()->put_thunk([=](Engine& engine) {
-      // TODO: implement error type and pass it through here
-      // auto py_headers = std::make_unique<Headers>(headers);
-      // callbacks->on_error.value()(*callbacks->stream->parent(), *callbacks->stream, ph_headers, end_stream);
+      callbacks->on_error.value()(*callbacks->stream->parent(),
+                                  *callbacks->stream,
+                                  error_code,
+                                  error_message,
+                                  attempt_count);
     });
   }
   return context;

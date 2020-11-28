@@ -60,8 +60,10 @@ def on_engine_running(engine: wrapper.Engine):
     def on_trailers(engine: wrapper.Engine, stream: wrapper.Stream, trailers: wrapper.Headers):
         print("on trailers")
 
-    def on_error(engine: wrapper.Engine, code: int):
+    def on_error(engine: wrapper.Engine, code: int, message: wrapper.Data, count: int):
         print("on error")
+        print(f"code: {code}; count: {count}")
+        print(message.as_str())
         done.set()
 
     def on_complete(engine: wrapper.Engine, stream: wrapper.Stream):
