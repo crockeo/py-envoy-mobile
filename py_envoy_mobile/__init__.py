@@ -114,8 +114,6 @@ if __name__ == "__main__":
     engine = wrapper.Engine()
     callbacks = wrapper.EngineCallbacks(engine).set_on_engine_running(on_engine_running).set_on_exit(on_exit)
 
-    # note: this implicitly waits, maybe change that in the future to put the control into the
-    # application layer :)
     engine.run(callbacks, EnvoyConfig().build(), "info")
     try:
         while engine.running():
