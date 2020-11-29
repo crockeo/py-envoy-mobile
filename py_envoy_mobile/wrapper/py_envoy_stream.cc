@@ -5,12 +5,6 @@
 
 #include "library/common/main_interface.h"
 
-// TODO(SERIOUS!!!): there's a problem in this section, where if the StreamCallbacks, Stream, and/or
-// Engine lose scope before the callbacks finish processing, you'll get a context variable that
-// points to a deallocated StreamCallbacks.
-//
-// this NEEDS to be fixed
-
 
 // TODO: I'm sure that this whole section could be cleaned up by C++ templates, but I haven't done
 // templating in far too long.
@@ -137,10 +131,6 @@ StreamCallbacks::StreamCallbacks(std::shared_ptr<Stream> stream)
       .context = this,
     } {}
 
-StreamCallbacks::~StreamCallbacks() {
-  this->callbacks.context = nullptr;
-}
-
 StreamCallbacks& StreamCallbacks::set_on_headers(OnHeadersCallback on_headers) {
   this->on_headers = on_headers;
   return *this;
@@ -185,7 +175,7 @@ Stream::Stream(std::shared_ptr<Engine> engine) {
 Stream::~Stream() {
   try {
     this->reset();
-  } catch (const std::runtime_error&&) {
+  } catch (const std::runtime_error&) {
     // NOTE: we can't throw in a destructor, so we just make a best effort to reset the stream. if
     // it fails then c'est la vie
   }
@@ -227,7 +217,7 @@ void Stream::send_trailers(const Headers& trailers) {
 }
 
 void Stream::reset() {
-  auto status = ::send_headers(this->stream_, headers.as_envoy_data(), end_stream);
+  auto status = reset_stream(this->stream_);
   if (status == ENVOY_FAILURE) {
     throw std::runtime_error("failed to reset stream");
   }

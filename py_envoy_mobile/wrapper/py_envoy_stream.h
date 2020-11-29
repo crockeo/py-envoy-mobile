@@ -18,7 +18,6 @@ using OnCompleteCallback = std::function<void (Engine&, Stream&)>;
 
 struct StreamCallbacks {
   StreamCallbacks(std::shared_ptr<Stream> stream);
-  ~StreamCallbacks();
 
   StreamCallbacks(const StreamCallbacks&&) = delete;
   StreamCallbacks& operator=(const StreamCallbacks&&) = delete;
