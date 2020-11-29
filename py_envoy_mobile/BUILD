@@ -3,9 +3,11 @@ load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 py_binary(
     name = "py_envoy_mobile",
     srcs = [
-        ":__init__.py",
+        "__main__.py",
+        "__init__.py",
+        "envoy_client.py",
     ],
-    main = "__init__.py",
+    main = "__main__.py",
     data = [
         ":wrapper.so",
     ],
