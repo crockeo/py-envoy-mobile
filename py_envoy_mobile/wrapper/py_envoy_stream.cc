@@ -13,6 +13,9 @@ static void *py_dispatch_on_headers(envoy_headers headers, bool end_stream, void
     return context;
   }
 
+  std::cout << "attempting to get some headers" << std::endl;
+
+
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
   Headers py_headers(headers);
   if (callbacks->on_headers.has_value()) {

@@ -6,8 +6,9 @@ py_binary(
         "__main__.py",
         "__init__.py",
         "envoy_client.py",
-        "gevent_stream.py",
         "result.py",
+        "gevent_engine.py",
+        "gevent_stream.py",
     ],
     main = "__main__.py",
     data = [
@@ -27,7 +28,6 @@ pybind_extension(
         "@envoy_mobile//library/common:envoy_main_interface_lib",
     ],
 )
-
 
 sh_binary(
     name = "debug",

@@ -3,19 +3,13 @@ from typing import Dict
 
 import gevent
 from gevent.event import AsyncResult
-from gevent.event import Event
 
 from py_envoy_mobile import wrapper  # type: ignore
 from py_envoy_mobile.result import Result
 from py_envoy_mobile.result import Status
 
 
-class GeventStream:
-    """
-    GeventStream is a stream implementation built on top of py-envoy-mobile primitives that hooks
-    into the envoy-mobile event loop.
-    """
-
+class Stream:
     def __init__(self, engine: wrapper.Engine):
         self.engine = engine
         self.stream = wrapper.Stream(engine)

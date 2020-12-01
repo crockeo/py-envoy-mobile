@@ -7,7 +7,7 @@ import gevent
 from gevent.event import AsyncResult
 
 from py_envoy_mobile import wrapper  # type: ignore
-from py_envoy_mobile.gevent_stream import GeventStream
+from py_envoy_mobile.gevent_stream import Stream
 from py_envoy_mobile.result import Result
 
 
@@ -41,16 +41,11 @@ class EnvoyClient:
             ":scheme": scheme,
         }
 
-        stream = GeventStream(self.engine)
+        stream = Stream(self.engine)
 
-        print("start")
         stream.start()
-        print("headers")
         stream.send_headers(headers, False)
-        print("body")
         stream.send_data(body, False)
-        print("close")
         stream.close()
 
-        print("result")
         return stream.result()
