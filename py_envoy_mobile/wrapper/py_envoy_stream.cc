@@ -182,6 +182,9 @@ Stream::~Stream() {
 }
 
 void Stream::start(const StreamCallbacks& callbacks) {
+  // TODO: somehow keep a reference to the StreamCallbacks, so that it lives as long as the Stream
+  // does. Otherwise you have to manually make sure the StreamCallbacks outlives the Stream in
+  // Python code
   auto status = start_stream(this->stream_, callbacks.callbacks);
   if (status == ENVOY_FAILURE) {
     throw std::runtime_error("failed to start stream");

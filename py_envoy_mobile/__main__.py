@@ -1,5 +1,6 @@
 import faulthandler
 import sys
+import traceback
 from typing import Any
 
 import gevent.event
@@ -46,8 +47,11 @@ def on_engine_running(engine: wrapper.Engine):
     print("on_engine_running")
 
     client = envoy_client.EnvoyClient(engine)
-    response = client.request("GET", "www.google.com", "/")
-    print(response)
+    try:
+        response = client.request("GET", "www.google.com", "/")
+        print(response)
+    except Exception:
+        traceback.print_exc()
     engine.terminate()
 
 

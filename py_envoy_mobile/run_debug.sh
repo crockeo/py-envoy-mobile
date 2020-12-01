@@ -12,4 +12,4 @@ else
     exit 1
 fi
 
-$debugger -- python3 -m py_envoy_mobile.__init__
+$debugger -- python3 -m py_envoy_mobile

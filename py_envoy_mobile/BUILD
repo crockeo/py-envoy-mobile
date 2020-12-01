@@ -6,6 +6,8 @@ py_binary(
         "__main__.py",
         "__init__.py",
         "envoy_client.py",
+        "gevent_stream.py",
+        "result.py",
     ],
     main = "__main__.py",
     data = [
