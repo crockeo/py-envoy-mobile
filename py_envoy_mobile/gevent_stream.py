@@ -109,7 +109,17 @@ class GeventStream:
     def close(self):
         self.send_data(b"", True)
 
-    # TODO: implement send_metadata and send_trailers
+    def send_metadata(self, metadata: Dict[str, str]):
+        envoy_metadata = wrapper.Headers()
+        for key, value in metadata.items():
+            envoy_metadata.add(key, value)
+        self.stream.send_metadata(envoy_metadata)
+
+    def send_trailers(self, trailers: Dict[str, str]):
+        envoy_trailers = wrapper.Headers()
+        for key, value in trailers.items():
+            envoy_trailers.add(key, value)
+        self.stream.send_trailers(envoy_trailers)
 
     def _set_results(self, status: Status):
         self.headers_result.set(self.headers_value)
