@@ -1,14 +1,13 @@
+import asyncio
 import faulthandler
 import sys
 import traceback
 from typing import Any
 
-import gevent.event
-
 from py_envoy_mobile import envoy_client
 from py_envoy_mobile import wrapper  # type: ignore
-from py_envoy_mobile.gevent_engine import Engine
-from py_envoy_mobile.gevent_stream import Stream
+from py_envoy_mobile.asyncio_engine import Engine as AsyncioEngine
+from py_envoy_mobile.gevent_engine import Engine as GeventEngine
 
 
 class EnvoyConfig:
@@ -45,10 +44,8 @@ class EnvoyConfig:
         return template
 
 
-if __name__ == "__main__":
-    faulthandler.enable()
-
-    engine = Engine(EnvoyConfig().build(), "info")
+def gevent_main():
+    engine = GeventEngine(EnvoyConfig().build(), "info")
     stream = engine.get_stream()
     stream.start()
     stream.send_headers(
@@ -63,3 +60,35 @@ if __name__ == "__main__":
     stream.close()
     print(stream.result())
     engine.terminate()  # this is synchronous
+
+
+async def asyncio_main():
+    engine = AsyncioEngine(EnvoyConfig().build(), "info")
+    stream = await engine.get_stream()
+    stream.start()
+    stream.send_headers(
+        {
+            ":authority": "www.google.com",
+            ":method": "GET",
+            ":path": "/",
+            ":scheme": "https",
+        },
+        False,
+    )
+    stream.close()
+    result = await stream.result()
+    print(result)
+    await engine.terminate()
+
+
+if __name__ == "__main__":
+    faulthandler.enable()
+
+    if len(sys.argv) < 2:
+        gevent_main()
+    elif sys.argv[1] == "gevent":
+        gevent_main()
+    elif sys.argv[1] == "asyncio":
+        asyncio.run(asyncio_main())
+    else:
+        raise ValueError(f"unknown mode {sys.argv[1]}")

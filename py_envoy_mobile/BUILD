@@ -5,6 +5,9 @@ py_binary(
     srcs = [
         "__main__.py",
         "__init__.py",
+        "asyncio_engine.py",
+        "asyncio_result.py",
+        "asyncio_stream.py",
         "envoy_client.py",
         "result.py",
         "gevent_engine.py",
