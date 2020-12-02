@@ -28,6 +28,7 @@ pybind_extension(
     ],
     deps = [
         "//py_envoy_mobile/wrapper:lib",
+        "//py_envoy_mobile/wrapper:lib_py",
         "@envoy_mobile//library/common:envoy_main_interface_lib",
     ],
 )

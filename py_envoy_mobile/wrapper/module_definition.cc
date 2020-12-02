@@ -4,10 +4,12 @@
 namespace py = pybind11;
 
 #include "library/common/main_interface.h"
+#include "executor_base.h"
 #include "py_envoy_data.h"
 #include "py_envoy_engine.h"
 #include "py_envoy_headers.h"
 #include "py_envoy_stream.h"
+#include "py_executor_base.h"
 
 class PyEngine : public Engine {
 public:
@@ -41,6 +43,10 @@ const std::string get_platform_filter_template() {
 PYBIND11_MODULE(wrapper, m) {
   m.def("get_config_template", &get_config_template);
   m.def("get_platform_filter_template", &get_platform_filter_template);
+
+  py::class_<ExecutorBase, PyExecutorBase, std::shared_ptr<ExecutorBase>>(m, "ExecutorBase")
+    .def(py::init<>())
+    .def("execute_impl", &ExecutorBase::execute_impl);
 
   py::class_<Data>(m, "Data")
     .def(py::init<const std::string&>())
