@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 
+#include "executor_base.h"
 #include "library/common/types/c_types.h"
 
 
@@ -20,7 +21,7 @@ using EngineCallback = std::function<void (Engine&)>;
 //
 //   * on_exit -- this runs when the engine exits
 struct EngineCallbacks {
-  EngineCallbacks(std::shared_ptr<Engine> engine);
+  EngineCallbacks(std::shared_ptr<Engine> engine, ExecutorBase& executor);
 
   EngineCallbacks& set_on_engine_running(EngineCallback on_engine_running);
   EngineCallbacks& set_on_exit(EngineCallback on_exit);
@@ -30,6 +31,7 @@ struct EngineCallbacks {
 
   envoy_engine_callbacks callbacks;
   std::shared_ptr<Engine> engine;
+  ExecutorBase& executor;
 };
 
 // Engine wraps the envoy_engine_t type, which is the central handle to performing networking in

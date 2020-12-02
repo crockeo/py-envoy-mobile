@@ -1,6 +1,8 @@
 try-import %workspace%/envoy-mobile/envoy/.bazelrc
 try-import %workspace%/envoy-mobile/.bazelrc
 
+build --copt -fvisibility=default
+
 # TODO: configure XCode 12.0 and remove override
 build --xcode_version=12.2
 

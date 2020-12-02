@@ -9,6 +9,5 @@ class AsyncioExecutor(wrapper.ExecutorBase):
         super().__init__()
         self.loop = asyncio.get_running_loop()
 
-    def execute_impl(self, func: Callable[[], None]):
+    def execute(self, func: Callable[[], None]):
         self.loop_call_soon_threadsafe(func)
-        pass

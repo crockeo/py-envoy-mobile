@@ -10,20 +10,21 @@
 
 static void py_dispatch_on_engine_running(void *context) {
   EngineCallbacks *callbacks = static_cast<EngineCallbacks *>(context);
-  callbacks->engine->put_thunk([=](Engine& engine) {
-    callbacks->on_engine_running(engine);
+  callbacks->executor.execute([=]() {
+    callbacks->on_engine_running(*callbacks->engine);
   });
 }
 
 static void py_dispatch_on_exit(void *context) {
   EngineCallbacks *callbacks = static_cast<EngineCallbacks *>(context);
-  callbacks->engine->put_thunk([=](Engine& engine) {
-    callbacks->on_exit(engine);
+  callbacks->executor.execute([=]() {
+    callbacks->on_exit(*callbacks->engine);
   });
 }
 
 
-EngineCallbacks::EngineCallbacks(std::shared_ptr<Engine> engine) {
+EngineCallbacks::EngineCallbacks(std::shared_ptr<Engine> engine, ExecutorBase& executor)
+  : executor(executor) {
   this->callbacks = {
     .on_engine_running = &py_dispatch_on_engine_running,
     .on_exit = &py_dispatch_on_exit,

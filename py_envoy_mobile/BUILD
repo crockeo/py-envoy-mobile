@@ -6,11 +6,13 @@ py_binary(
         "__main__.py",
         "__init__.py",
         "asyncio_engine.py",
+        "asyncio_executor.py",
         "asyncio_result.py",
         "asyncio_stream.py",
         "envoy_client.py",
         "result.py",
         "gevent_engine.py",
+        "gevent_executor.py",
         "gevent_stream.py",
     ],
     main = "__main__.py",
@@ -28,7 +30,6 @@ pybind_extension(
     ],
     deps = [
         "//py_envoy_mobile/wrapper:lib",
-        "//py_envoy_mobile/wrapper:lib_py",
         "@envoy_mobile//library/common:envoy_main_interface_lib",
     ],
 )

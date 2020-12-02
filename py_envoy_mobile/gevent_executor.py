@@ -11,7 +11,7 @@ class GeventExecutor(wrapper.ExecutorBase):
         super().__init__()
         self.group = Group()
 
-    def execute_impl(self, func: Callable[[], None]):
+    def execute(self, func: Callable[[], None]):
         # TODO: does this spawn on the thread it's calling from, or the thread of the hub to which
         # the group belongs?
         self.group.spawn(func)

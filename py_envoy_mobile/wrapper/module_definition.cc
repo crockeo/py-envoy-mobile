@@ -9,7 +9,18 @@ namespace py = pybind11;
 #include "py_envoy_engine.h"
 #include "py_envoy_headers.h"
 #include "py_envoy_stream.h"
-#include "py_executor_base.h"
+
+class PyExecutorBase : public ExecutorBase {
+public:
+  using ExecutorBase::ExecutorBase;
+
+  void execute(std::function<void ()> func) override {
+    PYBIND11_OVERRIDE_PURE(void,
+                           ExecutorBase,
+                           execute,
+                           func);
+  }
+};
 
 class PyEngine : public Engine {
 public:
@@ -44,9 +55,9 @@ PYBIND11_MODULE(wrapper, m) {
   m.def("get_config_template", &get_config_template);
   m.def("get_platform_filter_template", &get_platform_filter_template);
 
-  py::class_<ExecutorBase, PyExecutorBase, std::shared_ptr<ExecutorBase>>(m, "ExecutorBase")
+  py::class_<ExecutorBase, PyExecutorBase>(m, "ExecutorBase")
     .def(py::init<>())
-    .def("execute_impl", &ExecutorBase::execute_impl);
+    .def("execute", &ExecutorBase::execute);
 
   py::class_<Data>(m, "Data")
     .def(py::init<const std::string&>())
@@ -56,7 +67,7 @@ PYBIND11_MODULE(wrapper, m) {
     });
 
   py::class_<EngineCallbacks>(m, "EngineCallbacks")
-    .def(py::init<std::shared_ptr<Engine>>())
+    .def(py::init<std::shared_ptr<Engine>, ExecutorBase&>(), py::keep_alive<1, 3>())
     .def("set_on_engine_running", &EngineCallbacks::set_on_engine_running)
     .def("set_on_exit", &EngineCallbacks::set_on_exit);
 
@@ -81,7 +92,7 @@ PYBIND11_MODULE(wrapper, m) {
     .def("add", &Headers::add);
 
   py::class_<StreamCallbacks>(m, "StreamCallbacks")
-    .def(py::init<std::shared_ptr<Stream>>())
+    .def(py::init<std::shared_ptr<Stream>, ExecutorBase&>(), py::keep_alive<1, 3>())
     .def("set_on_headers", &StreamCallbacks::set_on_headers)
     .def("set_on_data", &StreamCallbacks::set_on_data)
     .def("set_on_metadata", &StreamCallbacks::set_on_metadata)

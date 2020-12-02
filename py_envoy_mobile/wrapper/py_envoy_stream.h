@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 
+#include "executor_base.h"
 #include "py_envoy_data.h"
 #include "py_envoy_engine.h"
 #include "py_envoy_headers.h"
@@ -17,7 +18,7 @@ using OnErrorCallback = std::function<void (Engine&, Stream&, int, Data, int)>;
 using OnCompleteCallback = std::function<void (Engine&, Stream&)>;
 
 struct StreamCallbacks {
-  StreamCallbacks(std::shared_ptr<Stream> stream);
+  StreamCallbacks(std::shared_ptr<Stream> stream, ExecutorBase& executor);
 
   StreamCallbacks(const StreamCallbacks&&) = delete;
   StreamCallbacks& operator=(const StreamCallbacks&&) = delete;
@@ -39,6 +40,7 @@ struct StreamCallbacks {
   std::optional<OnCompleteCallback> on_cancel;
 
   std::shared_ptr<Stream> stream;
+  ExecutorBase& executor;
   envoy_http_callbacks callbacks;
 };
 
