@@ -52,12 +52,6 @@ Engine::Engine() {
   this->terminated_ = false;
 }
 
-Engine::~Engine() {
-  if (!this->terminated_) {
-    this->terminate();
-  }
-}
-
 bool Engine::running() const {
   return !this->terminated_;
 }
@@ -67,11 +61,6 @@ void Engine::run(const EngineCallbacks& callbacks, const std::string& config, co
   if (status == ENVOY_FAILURE) {
     throw std::runtime_error("failed to run engine");
   }
-}
-
-void Engine::terminate() {
-  terminate_engine(this->engine_);
-  this->terminated_ = true;
 }
 
 void Engine::record_counter(const std::string& name, uint64_t count) {

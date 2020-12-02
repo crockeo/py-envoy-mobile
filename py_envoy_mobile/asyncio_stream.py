@@ -3,6 +3,7 @@ from typing import Callable
 from typing import Dict
 
 from py_envoy_mobile import wrapper  # type: ignore
+from py_envoy_mobile.asyncio_executor import AsyncioExecutor
 from py_envoy_mobile.asyncio_result import AsyncResult
 from py_envoy_mobile.result import Result
 from py_envoy_mobile.result import Status
@@ -78,7 +79,7 @@ class Stream:
             self._set_results(Status.Canceled)
 
         self.stream_callbacks = (
-            wrapper.StreamCallbacks(self.stream)
+            wrapper.StreamCallbacks(self.stream, AsyncioExecutor())
             .set_on_headers(on_headers)
             .set_on_data(on_data)
             .set_on_metadata(on_metadata)

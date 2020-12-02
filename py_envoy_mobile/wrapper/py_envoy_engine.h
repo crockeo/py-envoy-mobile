@@ -42,7 +42,7 @@ struct EngineCallbacks {
 class Engine {
 public:
   Engine();
-  virtual ~Engine();
+  virtual ~Engine() { }
 
   Engine(const Engine&&) = delete;
   Engine& operator=(const Engine&&) = delete;
@@ -50,7 +50,7 @@ public:
   bool running() const;
 
   void run(const EngineCallbacks& callbacks, const std::string& config, const std::string& log_level);
-  void terminate();
+  virtual void terminate() = 0;
 
   void record_counter(const std::string& name, uint64_t count);
   void gauge_set(const std::string& name, uint64_t value);
@@ -67,7 +67,6 @@ protected:
   std::condition_variable thunks_cv_;
   std::list<std::function<void (Engine&)>> thunks_;
 
-private:
   envoy_engine_t engine_;
   bool terminated_;
 };

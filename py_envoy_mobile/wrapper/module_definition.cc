@@ -26,7 +26,13 @@ class PyEngine : public Engine {
 public:
   using Engine::Engine;
 
-  std::optional<EngineCallback> get_thunk(bool wait) {
+  void terminate() override {
+    py::gil_scoped_release release;
+    terminate_engine(this->engine_);
+    this->terminated_ = true;
+  }
+
+  std::optional<EngineCallback> get_thunk(bool wait) override {
     std::unique_lock<std::mutex> lock(this->thunks_mtx_);
     if (wait) {
       py::gil_scoped_release release;

@@ -10,4 +10,4 @@ class AsyncioExecutor(wrapper.ExecutorBase):
         self.loop = asyncio.get_running_loop()
 
     def execute(self, func: Callable[[], None]):
-        self.loop_call_soon_threadsafe(func)
+        self.loop.call_soon_threadsafe(func)
