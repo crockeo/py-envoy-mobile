@@ -101,21 +101,19 @@ void Engine::gauge_sub(const std::string& name, uint64_t amount) {
   }
 }
 
-std::optional<EngineCallback> Engine::get_thunk() {
-  std::unique_lock<std::mutex> lock(this->thunks_mtx_);
-  if (this->thunks_.size() == 0) {
-    return std::optional<EngineCallback>();
-  }
-
-  auto thunk = this->thunks_.front();
-  this->thunks_.pop_front();
-  return std::optional(thunk);
-}
-
 void Engine::put_thunk(const EngineCallback&& thunk) {
   std::unique_lock<std::mutex> lock(this->thunks_mtx_);
   this->thunks_.push_back(std::move(thunk));
   this->thunks_cv_.notify_one();
+}
+
+EngineCallback Engine::get_thunk() {
+  std::unique_lock<std::mutex> lock(this->thunks_mtx_);
+  this->thunks_cv_.wait(lock, [this]{ return this->thunks_.size() > 0; });
+
+  auto thunk = this->thunks_.front();
+  this->thunks_.pop_front();
+  return thunk;
 }
 
 envoy_engine_t Engine::handle() {

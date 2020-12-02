@@ -40,8 +40,6 @@ class Engine:
     def _run_engine(self):
         self.engine.run(self.engine_callbacks, self.config, self.log_level)
         while self.engine.running():
-            gevent.sleep(0.05)  # TODO: come up with a better way to not hog CPU
+            gevent.idle()
             thunk = self.engine.get_thunk()
-            if thunk is None:
-                continue
             self.group.spawn(thunk, self.engine)

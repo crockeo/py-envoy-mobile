@@ -55,9 +55,8 @@ class Engine {
   void gauge_add(const std::string& name, uint64_t amount);
   void gauge_sub(const std::string& name, uint64_t amount);
 
-  std::optional<EngineCallback> get_thunk();
-
-  void put_thunk(const std::function<void (Engine&)>&& thunk);
+  void put_thunk(const EngineCallback&& thunk);
+  EngineCallback get_thunk();
 
   envoy_engine_t handle();
 
