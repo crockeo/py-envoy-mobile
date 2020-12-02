@@ -38,9 +38,9 @@ struct EngineCallbacks {
 // There are several functions in envoy-mobile that receive an envoy_engine_t as the first argument.
 // These functions are all included here, except for when they're used to create another data type.
 class Engine {
- public:
+public:
   Engine();
-  ~Engine();
+  virtual ~Engine();
 
   Engine(const Engine&&) = delete;
   Engine& operator=(const Engine&&) = delete;
@@ -56,15 +56,16 @@ class Engine {
   void gauge_sub(const std::string& name, uint64_t amount);
 
   void put_thunk(const EngineCallback&& thunk);
-  EngineCallback get_thunk();
+  virtual std::optional<EngineCallback> get_thunk(bool wait) = 0; // trampoline function defined in module_definition.c
 
   envoy_engine_t handle();
 
- private:
-  envoy_engine_t engine_;
-
+protected:
   std::mutex thunks_mtx_;
   std::condition_variable thunks_cv_;
   std::list<std::function<void (Engine&)>> thunks_;
+
+private:
+  envoy_engine_t engine_;
   bool terminated_;
 };

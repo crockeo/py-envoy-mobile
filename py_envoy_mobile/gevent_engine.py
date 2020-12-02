@@ -41,5 +41,5 @@ class Engine:
         self.engine.run(self.engine_callbacks, self.config, self.log_level)
         while self.engine.running():
             gevent.idle()
-            thunk = self.engine.get_thunk()
+            thunk = self.engine.get_thunk(True)
             self.group.spawn(thunk, self.engine)

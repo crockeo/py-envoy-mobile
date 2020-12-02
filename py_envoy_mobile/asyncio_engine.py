@@ -11,7 +11,6 @@ class Engine:
     def __init__(self, config: str, log_level: str):
         self.on_engine_running_evt = asyncio.Event()
         self.on_exit_evt = asyncio.Event()
-        self.tasks = []
 
         def _on_engine_running(engine: wrapper.Engine):
             self.on_engine_running_evt.set()
@@ -25,7 +24,7 @@ class Engine:
         )
         self.config = config
         self.log_level = log_level
-        self.tasks.append(asyncio.create_task(self._run_engine()))
+        self.runner = asyncio.create_task(self._run_engine())
 
     async def get_stream(self) -> Stream:
         await self.on_engine_running_evt.wait()
@@ -33,15 +32,15 @@ class Engine:
 
     async def terminate(self):
         self.engine.terminate()
-        await asyncio.gather(self.tasks)
-        await self.on_exit_evt.wait()
+        await self.runner
 
     async def _run_engine(self):
-        # TODO: make this....not halt forever while blocking SIGINT :)
         self.engine.run(self.engine_callbacks, self.config, self.log_level)
         while self.engine.running():
-            thunk = self.engine.get_thunk()
-            self.tasks.append(asyncio.create_task(self._as_coroutine(thunk)))
+            await asyncio.sleep(0.05)  # TODO don't busy wait here :)... again
+            thunk = self.engine.get_thunk(False)
+            if thunk is not None:
+                asyncio.create_task(self._as_coroutine(thunk))
 
     def _as_coroutine(self, func: Callable[[wrapper.Engine], None]):
         async def _as_coroutine_impl():

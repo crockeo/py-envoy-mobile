@@ -45,7 +45,7 @@ class EnvoyConfig:
 
 
 def gevent_main():
-    engine = GeventEngine(EnvoyConfig().build(), "info")
+    engine = GeventEngine(EnvoyConfig().build(), "error")
     stream = engine.get_stream()
     stream.start()
     stream.send_headers(
@@ -63,7 +63,7 @@ def gevent_main():
 
 
 async def asyncio_main():
-    engine = AsyncioEngine(EnvoyConfig().build(), "info")
+    engine = AsyncioEngine(EnvoyConfig().build(), "error")
     stream = await engine.get_stream()
     stream.start()
     stream.send_headers(

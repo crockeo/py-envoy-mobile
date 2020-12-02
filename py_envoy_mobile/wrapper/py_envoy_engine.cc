@@ -107,15 +107,6 @@ void Engine::put_thunk(const EngineCallback&& thunk) {
   this->thunks_cv_.notify_one();
 }
 
-EngineCallback Engine::get_thunk() {
-  std::unique_lock<std::mutex> lock(this->thunks_mtx_);
-  this->thunks_cv_.wait(lock, [this]{ return this->thunks_.size() > 0; });
-
-  auto thunk = this->thunks_.front();
-  this->thunks_.pop_front();
-  return thunk;
-}
-
 envoy_engine_t Engine::handle() {
   return this->engine_;
 }

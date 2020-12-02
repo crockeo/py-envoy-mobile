@@ -9,6 +9,26 @@ namespace py = pybind11;
 #include "py_envoy_headers.h"
 #include "py_envoy_stream.h"
 
+class PyEngine : public Engine {
+public:
+  using Engine::Engine;
+
+  std::optional<EngineCallback> get_thunk(bool wait) {
+    std::unique_lock<std::mutex> lock(this->thunks_mtx_);
+    if (wait) {
+      py::gil_scoped_release release;
+      this->thunks_cv_.wait(lock, [this]{ return this->thunks_.size() > 0; });
+    }
+
+    if (this->thunks_.size() == 0) {
+      return std::optional<EngineCallback>();
+    }
+
+    auto thunk = this->thunks_.front();
+    this->thunks_.pop_front();
+    return std::optional(thunk);
+  }
+};
 
 const std::string get_config_template() {
   return std::string(config_template);
@@ -34,7 +54,7 @@ PYBIND11_MODULE(wrapper, m) {
     .def("set_on_engine_running", &EngineCallbacks::set_on_engine_running)
     .def("set_on_exit", &EngineCallbacks::set_on_exit);
 
-  py::class_<Engine, std::shared_ptr<Engine>>(m, "Engine")
+  py::class_<Engine, PyEngine, std::shared_ptr<Engine>>(m, "Engine")
     .def(py::init<>())
     .def("running", &Engine::running)
     .def("run", &Engine::run)
