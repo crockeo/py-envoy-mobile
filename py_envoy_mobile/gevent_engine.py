@@ -3,7 +3,6 @@ from abc import abstractmethod
 
 import gevent
 from gevent.event import Event
-from gevent.pool import Group
 
 from py_envoy_mobile import wrapper  # type: ignore
 from py_envoy_mobile.gevent_executor import GeventExecutor
@@ -14,7 +13,6 @@ class Engine:
     def __init__(self, config: str, log_level: str):
         self.on_engine_running_evt = Event()
         self.on_exit_evt = Event()
-        self.group = Group()
 
         def _on_engine_running(engine: wrapper.Engine):
             self.on_engine_running_evt.set()
@@ -33,14 +31,9 @@ class Engine:
         self.engine.run(self.engine_callbacks, self.config, self.log_level)
 
     def get_stream(self):
-        while not self.on_engine_running_evt.wait(0.01):
-            pass
+        self.on_engine_running_evt.wait()
         return Stream(self.engine)
 
     def terminate(self):
         self.engine.terminate()
-        self.group.join()
-
-    def join(self):
-        while not self.on_exit_evt.wait(0.5):
-            pass
+        self.on_exit_evt.wait()

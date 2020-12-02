@@ -60,7 +60,6 @@ def gevent_main():
     stream.close()
     print(stream.result())
     engine.terminate()  # this is synchronous
-    engine.join()
 
 
 async def asyncio_main():
