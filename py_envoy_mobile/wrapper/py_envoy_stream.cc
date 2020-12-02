@@ -13,17 +13,16 @@ static void *py_dispatch_on_headers(envoy_headers headers, bool end_stream, void
     return context;
   }
 
-  std::cout << "attempting to get some headers" << std::endl;
-
-
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
-  Headers py_headers(headers);
   if (callbacks->on_headers.has_value()) {
-    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
-      callbacks->on_headers.value()(*callbacks->stream->parent(), *callbacks->stream, py_headers, end_stream);
+    Headers py_headers(headers);
+    callbacks->stream->parent()->exec_thunk([=](Engine& engine) {
+      callbacks->on_headers.value()(engine,
+                                    *callbacks->stream,
+                                    py_headers,
+                                    end_stream);
     });
   }
-  return context;
 }
 
 static void *py_dispatch_on_data(envoy_data data, bool end_stream, void *context) {
@@ -32,10 +31,13 @@ static void *py_dispatch_on_data(envoy_data data, bool end_stream, void *context
   }
 
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
-  Data py_data(data);
   if (callbacks->on_data.has_value()) {
-    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
-      callbacks->on_data.value()(*callbacks->stream->parent(), *callbacks->stream, py_data, end_stream);
+    Data py_data(data);
+    callbacks->stream->parent()->exec_thunk([=](Engine& engine) {
+      callbacks->on_data.value()(engine,
+                                 *callbacks->stream,
+                                 py_data,
+                                 end_stream);
     });
   }
   return context;
@@ -47,10 +49,12 @@ static void *py_dispatch_on_metadata(envoy_headers headers, void *context) {
   }
 
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
-  Headers py_headers(headers);
   if (callbacks->on_metadata.has_value()) {
-    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
-      callbacks->on_metadata.value()(*callbacks->stream->parent(), *callbacks->stream, py_headers);
+    Headers py_headers(headers);
+    callbacks->stream->parent()->exec_thunk([=](Engine& engine) {
+      callbacks->on_metadata.value()(engine,
+                                     *callbacks->stream,
+                                     py_headers);
     });
   }
   return context;
@@ -62,10 +66,12 @@ static void *py_dispatch_on_trailers(envoy_headers headers, void *context) {
   }
 
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
-  Headers py_headers(headers);
   if (callbacks->on_trailers.has_value()) {
-    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
-      callbacks->on_trailers.value()(*callbacks->stream->parent(), *callbacks->stream, py_headers);
+    Headers py_headers(headers);
+    callbacks->stream->parent()->exec_thunk([=](Engine& engine) {
+      callbacks->on_trailers.value()(engine,
+                                     *callbacks->stream,
+                                     py_headers);
     });
   }
   return context;
@@ -77,11 +83,11 @@ static void *py_dispatch_on_error(envoy_error error, void *context) {
   }
 
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
-  int error_code = error.error_code;
-  Data error_message = Data(error.message);
-  int attempt_count = error.attempt_count;
   if (callbacks->on_error.has_value()) {
-    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+    int error_code = error.error_code;
+    Data error_message = Data(error.message);
+    int attempt_count = error.attempt_count;
+    callbacks->stream->parent()->exec_thunk([=](Engine& engine) {
       callbacks->on_error.value()(*callbacks->stream->parent(),
                                   *callbacks->stream,
                                   error_code,
@@ -99,7 +105,7 @@ static void *py_dispatch_on_complete(void *context) {
 
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
   if (callbacks->on_complete.has_value()) {
-    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+    callbacks->stream->parent()->exec_thunk([=](Engine& engine) {
       callbacks->on_complete.value()(engine, *callbacks->stream);
     });
   }
@@ -113,7 +119,7 @@ static void *py_dispatch_on_cancel(void *context) {
 
   StreamCallbacks *callbacks = static_cast<StreamCallbacks *>(context);
   if (callbacks->on_cancel.has_value()) {
-    callbacks->stream->parent()->put_thunk([=](Engine& engine) {
+    callbacks->stream->parent()->exec_thunk([=](Engine& engine) {
       callbacks->on_cancel.value()(engine, *callbacks->stream);
     });
   }

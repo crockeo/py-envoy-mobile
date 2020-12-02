@@ -27,7 +27,7 @@ class Engine:
         )
         self.config = config
         self.log_level = log_level
-        self.group.spawn(self._run_engine)
+        self.engine.run(self.engine_callbacks, self.config, self.log_level)
 
     def get_stream(self):
         self.on_engine_running_evt.wait()
@@ -36,12 +36,4 @@ class Engine:
     def terminate(self):
         self.engine.terminate()
         self.group.join()
-
-    def _run_engine(self):
-        self.engine.run(self.engine_callbacks, self.config, self.log_level)
-        while self.engine.running():
-            gevent.sleep(0.05)  # TODO: come up with a better way to not hog CPU
-            thunk = self.engine.get_thunk()
-            if thunk is None:
-                continue
-            self.group.spawn(thunk, self.engine)
+        self.on_exit_evt.wait()

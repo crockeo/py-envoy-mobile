@@ -10,6 +10,17 @@ namespace py = pybind11;
 #include "py_envoy_stream.h"
 
 
+class PyEngine : public Engine {
+public:
+  using Engine::Engine;
+
+  void exec_thunk(const EngineCallback& thunk) override {
+    py::gil_scoped_acquire acquire;
+    thunk(*this);
+  }
+};
+
+
 const std::string get_config_template() {
   return std::string(config_template);
 }
@@ -34,7 +45,7 @@ PYBIND11_MODULE(wrapper, m) {
     .def("set_on_engine_running", &EngineCallbacks::set_on_engine_running)
     .def("set_on_exit", &EngineCallbacks::set_on_exit);
 
-  py::class_<Engine, std::shared_ptr<Engine>>(m, "Engine")
+  py::class_<Engine, PyEngine, std::shared_ptr<Engine>>(m, "Engine")
     .def(py::init<>())
     .def("running", &Engine::running)
     .def("run", &Engine::run)
@@ -43,8 +54,7 @@ PYBIND11_MODULE(wrapper, m) {
     .def("record_counter", &Engine::record_counter)
     .def("gauge_set", &Engine::gauge_set)
     .def("gauge_add", &Engine::gauge_add)
-    .def("gauge_sub", &Engine::gauge_sub)
-    .def("get_thunk", &Engine::get_thunk);
+    .def("gauge_sub", &Engine::gauge_sub);
 
   py::class_<Headers>(m, "Headers")
     .def(py::init<>())

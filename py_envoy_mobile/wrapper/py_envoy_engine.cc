@@ -10,16 +10,12 @@
 
 static void py_dispatch_on_engine_running(void *context) {
   EngineCallbacks *callbacks = static_cast<EngineCallbacks *>(context);
-  callbacks->engine->put_thunk([=](Engine& engine) {
-    callbacks->on_engine_running(engine);
-  });
+  callbacks->engine->exec_thunk(callbacks->on_engine_running);
 }
 
 static void py_dispatch_on_exit(void *context) {
   EngineCallbacks *callbacks = static_cast<EngineCallbacks *>(context);
-  callbacks->engine->put_thunk([=](Engine& engine) {
-    callbacks->on_exit(engine);
-  });
+  callbacks->engine->exec_thunk(callbacks->on_exit);
 }
 
 
@@ -99,23 +95,6 @@ void Engine::gauge_sub(const std::string& name, uint64_t amount) {
   if (status == ENVOY_FAILURE) {
     throw std::runtime_error("failed to subtract from gauge");
   }
-}
-
-std::optional<EngineCallback> Engine::get_thunk() {
-  std::unique_lock<std::mutex> lock(this->thunks_mtx_);
-  if (this->thunks_.size() == 0) {
-    return std::optional<EngineCallback>();
-  }
-
-  auto thunk = this->thunks_.front();
-  this->thunks_.pop_front();
-  return std::optional(thunk);
-}
-
-void Engine::put_thunk(const EngineCallback&& thunk) {
-  std::unique_lock<std::mutex> lock(this->thunks_mtx_);
-  this->thunks_.push_back(std::move(thunk));
-  this->thunks_cv_.notify_one();
 }
 
 envoy_engine_t Engine::handle() {

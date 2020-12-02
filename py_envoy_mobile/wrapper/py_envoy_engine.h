@@ -40,7 +40,7 @@ struct EngineCallbacks {
 class Engine {
  public:
   Engine();
-  ~Engine();
+  virtual ~Engine();
 
   Engine(const Engine&&) = delete;
   Engine& operator=(const Engine&&) = delete;
@@ -55,17 +55,12 @@ class Engine {
   void gauge_add(const std::string& name, uint64_t amount);
   void gauge_sub(const std::string& name, uint64_t amount);
 
-  std::optional<EngineCallback> get_thunk();
-
-  void put_thunk(const std::function<void (Engine&)>&& thunk);
+  // trampoline function defined in module_definitions.cc
+  virtual void exec_thunk(const EngineCallback& thunk) = 0;
 
   envoy_engine_t handle();
 
  private:
   envoy_engine_t engine_;
-
-  std::mutex thunks_mtx_;
-  std::condition_variable thunks_cv_;
-  std::list<std::function<void (Engine&)>> thunks_;
   bool terminated_;
 };
