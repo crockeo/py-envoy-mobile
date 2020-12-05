@@ -1,5 +1,7 @@
 import os
+import threading
 from typing import Callable
+from typing import TypeVar
 
 import gevent
 from gevent.pool import Group
@@ -8,35 +10,63 @@ from greenlet import greenlet
 from py_envoy_mobile import wrapper  # type: ignore
 
 
-class GeventExecutor(wrapper.ExecutorBase):
+T = TypeVar("T")
+
+
+class ThreadsafeChannel:
     """
-    There are a couple of weird things about this class that aren't particularly well documented:
+    gevent doesn't play well with multiple real threads. There is no documented canonical way to
+    move work across threads, a la asyncio.loop.call_soon_threadsafe. Also, if the main thread is
+    waiting on work from another thread, it will raise a LoopExit causing the program to exit.
 
-      - To construct a greenlet from a non-main thread and attach it to a hub on the main thread,
-        one needs to directly use a greenlet.greenlet. See:
-        https://github.com/gevent/gevent/issues/931#issuecomment-274117169
-        This still isn't thread-safe, but it ought not fail in practice because of the GIL.
-
-      - To prevent spurious LoopExits from gevent because of the event loop emptying on the main
-        thread, we provide a greenlet _lazy_cycle to loop once every time a callbck is called. This
-        is super hacky, and I hope I learn how to do it right before this sees the light of day.
+    This class solves both of those problems by creating a thread-safe way to move data across
+    threads that binds with gevent.
     """
 
     def __init__(self):
-        super().__init__()
         self.hub = gevent.get_hub()
         self.watcher = self.hub.loop.async_()
-        self.lazy_cycle = gevent.spawn(self._lazy_cycle)
+        self.lock = threading.Lock()
+        self.values: List[T] = []
+
+    def put(self, value: T) -> None:
+        """
+        put enqueues a value and notifies and greenlets waiting on a value that one is available.
+        """
+        with self.lock:
+            self.values.append(value)
+            self.watcher.send()
+
+    def get(self) -> T:
+        """
+        get retrieves an enqueued value. If none exists it waits until notified that such a value is
+        available.
+        """
+        self.lock.acquire()
+        while len(self.values) == 0:
+            self.lock.release()
+            self.hub.wait(self.watcher)
+            self.lock.acquire()
+
+        value: T = self.values.pop(0)
+        self.lock.release()
+        return value
+
+
+class GeventExecutor(wrapper.ExecutorBase):
+    def __init__(self):
+        super().__init__()
+        self.group = Group()
+        self.channel: ThreadsafeChannel[Callable[[], None]] = ThreadsafeChannel()
+        self.spawn_work_greenlet = gevent.spawn(self._spawn_work)
 
     def __del__(self):
-        self.watcher.close()  # need to close, or it leaks resources
-        gevent.kill(self._start_on_main)  # need to kill, or we leak greenlets
-        super().__del__(self)
+        super().__del__()
+        self.spawn_work_greenlet.kill()
 
     def execute(self, func: Callable[[], None]):
-        g = greenlet(func, self.hub)
-        self.hub.loop.run_callback(g.switch)
-        self.watcher.send()
+        self.channel.put(func)
 
-    def _lazy_cycle(self):
-        self.watcher.start(self._lazy_cycle)
+    def _spawn_work(self):
+        while True:
+            self.group.spawn(self.channel.get())
